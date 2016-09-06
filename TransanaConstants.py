@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2015 The Board of Regents of the University of Wisconsin System 
+# Copyright (C) 2003 - 2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """This module contains Transana's global variables and constants."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>, Rajas Sambhare'
+__author__ = 'David Woods <dwoods@transana.com>, Rajas Sambhare'
 
 # import wxPython
 import wx
@@ -53,9 +53,9 @@ if workshopVersion:
     expirationdate = TransanaConfigConstants.xpdt
 
 # Program Version Number
-versionNumber = '3.00'
+versionNumber = '3.02'
 # Build Number
-buildNumber = '300'
+buildNumber = '302'
 # Modify for Multi-user if appropriate
 if not singleUserVersion:
     versionNumber = versionNumber + '-MU'

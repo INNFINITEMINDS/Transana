@@ -1,4 +1,4 @@
-# Copyright (C) 2003 - 2015 The Board of Regents of the University of Wisconsin System 
+# Copyright (C) 2002-2016 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -16,7 +16,7 @@
 
 """This module contains Transana's configuration constants."""
 
-__author__ = 'David Woods <dwoods@wcer.wisc.edu>'
+__author__ = 'David Woods <dwoods@transana.com>'
 
 # import Python's sys module
 import sys
@@ -30,9 +30,12 @@ singleUserVersion = False
 # Different Python versions require different database engines!
 if sys.version[:5] == '2.6.6':
     DBInstalled = 'MySQLdb-server'
-elif sys.version[:6].strip() in ['2.7.7 ', '2.7.8', '2.7.9', '2.7.10']:
-#    DBInstalled = 'PyMySQL'
-    DBInstalled = 'MySQLdb-server'
+elif sys.version[:3].strip() in ['2.7']:
+    # MySQLdb doesn't work with py2app on OS X, so we should use PyMySQL on the Mac.
+    if sys.platform == 'darwin':
+        DBInstalled = 'PyMySQL'
+    else:
+        DBInstalled = 'MySQLdb-server'
 
 ##    print "TransanaConfigConstants.py"
 ##    print "Python", sys.version[:5]
