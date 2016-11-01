@@ -1883,7 +1883,7 @@ def ConnectToMessageServer():
                 # We need to access the Program Options dialog
                 import OptionsSettings
                 # Display the Message Server Tab of the Transana Options dialog
-                OptionsSettings.OptionsSettings(TransanaGlobal.menuWindow, 2)
+                OptionsSettings.OptionsSettings(TransanaGlobal.menuWindow, 3)
                 # Update the video playback speed, if it is changed.
                 TransanaGlobal.menuWindow.ControlObject.VideoWindow.SetPlayBackSpeed(TransanaGlobal.configData.videoSpeed)
             # If the user does not say "Yes" ...
