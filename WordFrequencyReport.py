@@ -1143,7 +1143,7 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... remove the " OR " from the final entry in the Search Terms
             searchTerms[-1] = searchTerms[-1][:-4]
             # ... finalize the Search Name
-            searchName = 'Word Freq for %s' % searchName
+            searchName = _('Word Freq for %s') % searchName
             # .. and call ProcessSearch to execute the search terms we've assembled here
             search = ProcessSearch.ProcessSearch(self.tree, self.tree.searchCount, searchName=searchName, \
                                                  searchTerms=searchTerms, searchScope=self.startNode)
