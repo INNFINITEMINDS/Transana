@@ -835,7 +835,7 @@ class ProcessSearch(object):
             episodeSQL += transSQL
         episodeSQL += 'GROUP BY Ep.SeriesNum, SeriesID, Ep.EpisodeNum, EpisodeID'
         if includesText:
-            episodeSQL += ', TranscriptID'
+            episodeSQL += ', Tr.TranscriptNum, TranscriptID'
         # Add in the SQL "HAVING" Clause that was constructed above
         episodeSQL += ' HAVING %s ' % havingStr
 
@@ -852,7 +852,7 @@ class ProcessSearch(object):
             quoteSQL += 'AND (CK1.QuoteNum > 0) '
         if len(self.collectionList) > 0:
             quoteSQL += collectionSQL % paramsQ
-        quoteSQL += 'GROUP BY Q.CollectNum, CollectID, QuoteID '
+        quoteSQL += 'GROUP BY Q.CollectNum, CollectID, Q.QuoteNum, QuoteID '
         # Add in the SQL "HAVING" Clause that was constructed above
         quoteSQL += 'HAVING %s ' % havingStr
         # Add an "ORDER BY" Clause to preserve Quote Sort Order
@@ -875,7 +875,7 @@ class ProcessSearch(object):
             clipSQL += 'AND (Tr.ClipNum = Cl.ClipNum) '
         if len(self.collectionList) > 0:
             clipSQL += collectionSQL % paramsCl
-        clipSQL += 'GROUP BY Cl.CollectNum, CollectID, ClipID '
+        clipSQL += 'GROUP BY Cl.CollectNum, CollectID, Cl.ClipNum, ClipID '
         # Add in the SQL "HAVING" Clause that was constructed above
         clipSQL += 'HAVING %s ' % havingStr
         # Add an "ORDER BY" Clause to preserve Clip Sort Order
@@ -890,7 +890,7 @@ class ProcessSearch(object):
             wholeSnapshotSQL += '(CK1.SnapshotNum > 0) '
             if len(self.collectionList) > 0:
                 wholeSnapshotSQL += collectionSQL % paramsSn
-            wholeSnapshotSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
+            wholeSnapshotSQL += 'GROUP BY Sn.CollectNum, CollectID, Sn.SnapshotNum, SnapshotID '
             # Add in the SQL "HAVING" Clause that was constructed above
             wholeSnapshotSQL += 'HAVING %s ' % havingStr
             # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
@@ -905,7 +905,7 @@ class ProcessSearch(object):
             snapshotCodingSQL += 'AND (CK1.Visible = 1) '
             if len(self.collectionList) > 0:
                 snapshotCodingSQL += collectionSQL % paramsSn
-            snapshotCodingSQL += 'GROUP BY Sn.CollectNum, CollectID, SnapshotID '
+            snapshotCodingSQL += 'GROUP BY Sn.CollectNum, CollectID, Sn.SnapshotNum, SnapshotID '
             # Add in the SQL "HAVING" Clause that was constructed above
             snapshotCodingSQL += 'HAVING %s ' % havingStr
             # Add an "ORDER BY" Clause to preserve Snapshot Sort Order
