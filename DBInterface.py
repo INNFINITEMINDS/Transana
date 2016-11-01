@@ -1035,6 +1035,10 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
         # Execute the Query
         dbCursor.execute(query)
 
+        # unit_test_database.py crashes in single-user mode without this!  It shouldn't be necessary, but somehow it is.
+        if TransanaConstants.DBInstalled in ['sqlite3']:
+            db.commit()
+
         # Now let's get the Database Version value from the Configuration Information table
         query = "SELECT Value FROM  ConfigInfo WHERE KeyVal = 'DBVersion'"
         # Execute the Query
@@ -1831,8 +1835,8 @@ def get_db(dbToOpen=None, usePrompt=True):
                 databaseName = dbToOpen.databaseName  # dbToOpen
                 port = dbToOpen.port                  # ''
             # For unit_test_search.py...
-            if dbServer == 'DKW-Linux':
-                messageServer = 'DKW-Linux'
+            if dbServer == '192.168.1.202':
+                messageServer = '192.168.1.202'
                 messageServerPort = 17595
                 if hasattr(dbToOpen, 'ssl'):
                     ssl = dbToOpen.ssl
