@@ -820,7 +820,7 @@ class SearchDialog(wx.Dialog):
                 # Clear the Search Text box for the next entry
                 self.searchText.Clear()
 
-            # If we're not in Student ...
+            # If we're not in Basic ...
             if TransanaConstants.proVersion:
                 # We can't have Text Search AND Snapshots!!
                 # Remember what the Snapshot Value was
@@ -859,7 +859,7 @@ class SearchDialog(wx.Dialog):
                 self.btnRightParen.Enable(self.searchStack[-1][6])
                 # Restore the counter of open paren pairs
                 self.parensOpen = self.searchStack[-1][7]
-                # If we're not in the Student Version ...
+                # If we're not in the Basic Version ...
                 if TransanaConstants.proVersion:
                     # If there is NO Text Search specification and the Include Snapshot box is disabled ...
                     if (not 'Item Text contains "' in self.searchQuery.GetValue()) and (not self.includeSnapshots.IsEnabled()):

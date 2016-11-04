@@ -74,7 +74,7 @@ class AboutBox(wx.Dialog):
                 if TransanaConstants.proVersion:
                     versionLbl = _("Professional Version")
                 else:
-                    versionLbl = _("Student Version")
+                    versionLbl = _("Basic Version")
         else:
             versionLbl = _("Multi-user Version")
         versionLbl += " %s"
