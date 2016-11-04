@@ -98,6 +98,7 @@ Cloud Service/
 locale/
 locale - OLD/
 SSL/
+TransanaBasicSetupDir/
 TransanaDemonstrationSetupDir/
 TransanaLabSetupDir/
 TransanaMultiUserSetupDir/
@@ -212,3 +213,5 @@ README - OLD.txt
 Unit Tests/Resources/
 images/Splash3.xcf
 help/Images/HelpButtons.xcf
+TransanaConfigConstantsBasic.py
+unit_test_shared.py

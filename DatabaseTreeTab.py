@@ -2741,7 +2741,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             # Check to see if the Clip's parent collection is in the tree.  It should be there, but I did
             # have a testing database where one collection was missing, despite the presence of Clips and Notes.
             if mapDict['Libraries'].has_key(objParentNum):
-                # Exclude Documents in Transana Student
+                # Exclude Documents in Transana Basic
                 if TransanaConstants.proVersion or objType != 'Document':
                     # Find the correct Library node using the map dictionary
                     libitem = mapDict['Libraries'][objParentNum]
@@ -2919,7 +2919,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             else:
                 print "ABANDONED CLIP RECORD!" , clipNo, clipID.encode('utf8'), collNo
 
-        # If we're in a Pro version, not the Student Version ...
+        # If we're in a Pro version, not the Basic Version ...
         if TransanaConstants.proVersion:
             # Populate the tree with all Quote records
             for (quoteNum, quoteID, collNum, sourceDoc, sortOrder) in DBInterface.list_of_quotes():
@@ -4628,7 +4628,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnLibraryCommand(self, evt):
         """Handle menu selections for Library objects."""
         n = evt.GetId() - self.cmd_id_start["LibraryNode"]
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Add Document (1), Import Spreadsheet Data (3), Batch Document Creation (4), Library Keyword Sequence Map (10),
         # Library Keyword Bar Graph (11), and Library Keyword Percentage Graph (12)
         if not TransanaConstants.proVersion:
@@ -5301,7 +5301,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
         """Handle selections for Document menu."""
         n = evt.GetId() - self.cmd_id_start['DocumentNode']
 
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Open Additional Document (3)
         if not TransanaConstants.proVersion:
             if n >= 3:
@@ -5628,7 +5628,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnEpisodeCommand(self, evt):
         """Handle menu selections for Episode objects."""
         n = evt.GetId() - self.cmd_id_start["EpisodeNode"]
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Open Multiple Transcripts (3)
         if not TransanaConstants.proVersion:
             if n >= 3:
@@ -5984,7 +5984,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnTranscriptCommand(self, evt):
         """ Handle menuy selections for Transcript menu """
         n = evt.GetId() - self.cmd_id_start['TranscriptNode']
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Open Additional Transcript (2)
         if not TransanaConstants.proVersion:
             if n >= 2:
@@ -6267,7 +6267,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnCollectionCommand(self, evt):
         """Handle menu selections for Collection objects."""
         n = evt.GetId() - self.cmd_id_start['CollectionNode']
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Add Quote (3), Add Multi-transcript Clip (5), Add Snapshot (6), and Batch Snapshot Creation (7)
         if not TransanaConstants.proVersion:
             if n >= 3:
@@ -7468,13 +7468,13 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnClipCommand(self, evt):
         """Handle selections for the Clip menu."""
         n = evt.GetId() - self.cmd_id_start['ClipNode']
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Add Quote (4) Add Multi-transcript Clip (6) and Add Snapshot (7)
         if not TransanaConstants.proVersion and (n >= 4):
             n += 1
         if not TransanaConstants.proVersion and (n >= 6):
             n += 2
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Export Clip Video (12) and Insert Clip Hyperlink (13)
         if not TransanaConstants.proVersion and (n >= 12):
             n += 2
@@ -9394,7 +9394,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
     def OnKwCommand(self, evt):
         """Handle selections for the Keyword menu."""
         n = evt.GetId() - self.cmd_id_start["KeywordNode"]
-        # If we're in the Student version, we need to adjust the menu numbers
+        # If we're in the Basic version, we need to adjust the menu numbers
         # for Add Quote (4) and Create Multi-transcript Quick Clip (6)
         if not TransanaConstants.proVersion and (n >= 4):
             n += 1
@@ -11562,11 +11562,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         # Call the Collection Root Event Processor
                         self.OnCollRootCommand(event)
 
-                    # If the item is a Collection, Add a Student Clip / Quote
+                    # If the item is a Collection, Add a Standard Clip / Quote
                     elif sel_item_data.nodetype == 'CollectionNode':
                         # If our current TranscriptWindow Page / Pane is a Transcript ...
                         if self.parent.ControlObject.GetCurrentItemType() == 'Transcript':
-                            # If Student ...
+                            # If Basic ...
                             if not TransanaConstants.proVersion:
                                 # ... Change the eventID to match "Add Clip"
                                 event.SetId(self.cmd_id_start["CollectionNode"] + 3)
