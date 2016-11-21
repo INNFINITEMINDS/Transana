@@ -108,7 +108,7 @@ class Quote(DataObject.DataObject):
             str += self.text[:150] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str += "text = %s\n\n" % self.text
-        if len(self.plaintext) > 150:
+        if (self.plaintext != None) and (len(self.plaintext) > 150):
             str += "plaintext = " + self.plaintext[:150] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str += "plaintext = %s\n\n" % self.plaintext

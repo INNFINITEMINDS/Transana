@@ -874,6 +874,10 @@ class ControlObject(object):
                             self.TranscriptWindow.nb.SetSelection(page)
                             # Save it (with Prompting!)
                             self.SaveTranscript(1, transcriptToSave=pane.panelNum)
+                        # If the record is locked ...
+                        if dataObj.isLocked:
+                            # ... unlock it!
+                            dataObj.unlock_record()
                         # If there's more than one Splitter Pane open ...
                         if len(self.TranscriptWindow.nb.GetPage(page).GetChildren()) > 1:
                             # Clear the Splitter Pane
@@ -1651,8 +1655,10 @@ class ControlObject(object):
         
         # F1 = Focus on Menu Window
         if (c == wx.WXK_F1) and not hasMods:
-            # Set the focus on the Menu Window
-            self.MenuWindow.tmpCtrl.SetFocus()
+            # The Mac doesn't have a separate Menu Window
+            if not ('wxMac' in wx.PlatformInfo):
+                # Set the focus on the Menu Window
+                self.MenuWindow.tmpCtrl.SetFocus()
 
         # F2 = Focus on Visualization Window
         elif (c == wx.WXK_F2) and not hasMods:
@@ -1866,7 +1872,8 @@ class ControlObject(object):
 
     def SetTranscriptEditOptions(self, enable):
         """ Change the Transcript's Edit Mode """
-        self.MenuWindow.SetTranscriptEditOptions(enable)
+        if self.MenuWindow != None:
+            self.MenuWindow.SetTranscriptEditOptions(enable)
 
     def ActiveTranscriptReadOnly(self):
         return self.TranscriptWindow.dlg.editor.get_read_only()
@@ -2235,7 +2242,10 @@ class ControlObject(object):
 
     def IsPlaying(self):
         """ Indicates whether the video is playing or not. """
-        return self.VideoWindow.IsPlaying()
+        if self.VideoWindow != None:
+            return self.VideoWindow.IsPlaying()
+        else:
+            return False
 
     def IsPaused(self):
         """ Indicates whether the video is paused or not. """

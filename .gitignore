@@ -215,3 +215,4 @@ images/Splash3.xcf
 help/Images/HelpButtons.xcf
 TransanaConfigConstantsBasic.py
 unit_test_shared.py
+unit_test_format.py
