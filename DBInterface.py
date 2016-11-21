@@ -1038,6 +1038,7 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
         # unit_test_database.py crashes in single-user mode without this!  It shouldn't be necessary, but somehow it is.
         if TransanaConstants.DBInstalled in ['sqlite3']:
             db.commit()
+            wx.YieldIfNeeded()
 
         # Now let's get the Database Version value from the Configuration Information table
         query = "SELECT Value FROM  ConfigInfo WHERE KeyVal = 'DBVersion'"

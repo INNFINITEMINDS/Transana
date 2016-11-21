@@ -505,13 +505,14 @@ class TranscriptionUI(wx.Frame):
         """Load a transcript object."""
         if self.nb.GetCurrentPage().activePanel == 0:
             # Determine the appropriate text for the Notebook Tab label ...
-            if isinstance(transcriptObj, Transcript.Transcript) and transcriptObj.clip_num > 0:
-                tmpClip = Clip.Clip(transcriptObj.clip_num)
-                pageLbl = tmpClip.id
-            else:
-                pageLbl = transcriptObj.id
-            # Set the Notebook Tab Text            
-            self.nb.SetPageText(self.nb.GetSelection(), pageLbl)
+            if isinstance(transcriptObj, Transcript.Transcript):
+                if transcriptObj.clip_num > 0:
+                    tmpClip = Clip.Clip(transcriptObj.clip_num)
+                    pageLbl = tmpClip.id
+                else:
+                    pageLbl = transcriptObj.id
+                # Set the Notebook Tab Text            
+                self.nb.SetPageText(self.nb.GetSelection(), pageLbl)
 
         # Transcripts should always be loaded in a Read-Only editor.  Set the Editor to Read Only.
         # This triggers a save prompt if the current transcript needs to be saved.

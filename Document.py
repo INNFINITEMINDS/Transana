@@ -109,7 +109,7 @@ class Document(DataObject.DataObject):
             str = str + self.text[:250] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str = str + "text = %s\n\n" % self.text
-        if len(self.plaintext) > 250:
+        if (self.plaintext != None) and (len(self.plaintext) > 250):
             str = str + self.plaintext[:250] + '\n\n'   # "text not displayed due to length.\n\n"
         else:
             str = str + "plaintext = %s\n\n" % self.plaintext
