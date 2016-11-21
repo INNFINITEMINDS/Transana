@@ -1515,7 +1515,7 @@ class DatabaseTreeTab(wx.Panel):
             tempCollection.lock_record()
             collectionLocked = True
         # Handle the exception if the record is already locked by someone else
-        except TransanaExceptions.RecordLockedError, c:
+        except RecordLockedError, c:
             # If we can't get a lock on the Collection, it's really not that big a deal.  We only try to get it
             # to prevent someone from deleting it out from under us, which is pretty unlikely.  But we should 
             # still be able to add Snapshots even if someone else is editing the Collection properties.
@@ -3240,14 +3240,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
         # This checks for an "expandNode" that doesn't have the leading parameter name (when sortOrder was added)
         if isinstance(sortOrder, bool):
-            import TransanaExceptions
-            raise TransanaExceptions.NotImplementedError
+            raise NotImplementedError
 
         # This checks for a Quote, Clip or Snapshot without a Sort Order
         if nodeType in [ 'QuoteNode', 'ClipNode', 'SnapshotNode' ]:
             if sortOrder == None:
-                import TransanaExceptions
-                raise TransanaExceptions.NotImplementedError
+                raise NotImplementedError
 
         # Start at the tree's Root Node
         currentNode = self.GetRootItem()
@@ -4864,10 +4862,21 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     self.parent.ControlObject.LoadTranscript(library_name, episode_name, transcript_name)  # Load everything via the ControlObject
 
         elif n == 3:    # Import Spreadsheet Data
-            # Run the Spreadsheet Import wizard, passing it the tree control for updating 
-            spreadsheetDlg = SpreadsheetDataImport.SpreadsheetDataImport(self.parent, self)
-            # Destroy the wizard when we're done
-            spreadsheetDlg.Destroy()
+            # Load the Library
+            library = Library.Library(selData.recNum)
+            try:
+                # Lock the Library, to prevent it from being deleted out from under the Batch Document Creation
+                library.lock_record()
+                # Run the Spreadsheet Import wizard, passing it the tree control for updating 
+                spreadsheetDlg = SpreadsheetDataImport.SpreadsheetDataImport(self.parent, self)
+                # Destroy the wizard when we're done
+                spreadsheetDlg.Destroy()
+                # Unlock the Library, if we locked it.
+                library.unlock_record()
+            # Handle the exception if the record is already locked by someone else
+            except RecordLockedError, e:
+                ReportRecordLockedException(_('Library'), library.id, e)
+            
             
         elif n == 4:    # Batch Document Creation
             # Load the Library
