@@ -636,7 +636,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # Initialize Document Text with the initial XML for a Transana-XML document
                     tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
 <richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
 """
                     tmpDoc.plaintext = ''
 
@@ -647,8 +647,8 @@ class SpreadsheetDataImport(wiz.Wizard):
                         answer = self.strip_quotes(self.all_data[q][x])
 
                         # ... populate the Document Text and Plain Text with Question and Response
-                        # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph tabs="762">
+                        # Start with a Paragraph declaration, left indent after first line 3", tab at 3"
+                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
       <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                         # Add the actual DATA
                         tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
@@ -766,7 +766,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # Initialize Document Text with the initial XML for a Transana-XML document
                     tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
 <richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
 """
                     tmpDoc.plaintext = ''
 
@@ -790,7 +790,7 @@ class SpreadsheetDataImport(wiz.Wizard):
 
                         # ... populate the Document Text and Plain Text with Question and Response
                         # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph tabs="762">
+                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
       <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                         # Add the actual DATA
                         tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
@@ -855,7 +855,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # Initialize Document Text with the initial XML for a Transana-XML document
                     tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
 <richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
 """
                     tmpDoc.plaintext = ''
 
@@ -868,7 +868,7 @@ class SpreadsheetDataImport(wiz.Wizard):
 
                         # ... populate the Document Text and Plain Text with Question and Response
                         # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph tabs="762">
+                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
       <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                         # Add the actual DATA
                         tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
@@ -986,7 +986,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # Initialize Document Text with the initial XML for a Transana-XML document
                     tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
 <richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="">
+  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
 """
                     tmpDoc.plaintext = ''
                     # We have to re-initialize the Participant Counter with each Question
@@ -1009,7 +1009,7 @@ class SpreadsheetDataImport(wiz.Wizard):
 
                         # ... populate the Document Text and Plain Text with Question and Response
                         # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph tabs="762">
+                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
       <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                         # Add the actual DATA
                         tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
