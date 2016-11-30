@@ -2019,7 +2019,7 @@ class TranscriptEditor(RichTextEditCtrl):
             # If there is NO SELECTION ...  ((-2, -1) comes up when holding shift with cursor keys to eliminate a selection!)
             if self.selection in [(-2, -2), (-2, -1)]:
                 # If we have a Document object ...
-                if isinstance(self.parent.ControlObject.currentObj, Document.Document):
+                if (self.parent.ControlObject != None) and isinstance(self.parent.ControlObject.currentObj, Document.Document):
                     # ... have the ControlObject update Transana Windows as appropriate
                     self.parent.ControlObject.SetCurrentDocumentPosition(self.pos, self.selection, fromEditor=True)
                 # If we have an Episode ...
@@ -2030,7 +2030,7 @@ class TranscriptEditor(RichTextEditCtrl):
             # If there IS a SELECTION ...
             else:
                 # If we have a Document object ...
-                if isinstance(self.parent.ControlObject.currentObj, Document.Document):
+                if (self.parent.ControlObject != None) and isinstance(self.parent.ControlObject.currentObj, Document.Document):
                     # ... have the ControlObject update Transana Windows as appropriate
                     self.parent.ControlObject.SetCurrentDocumentSelection(self.selection[0], self.selection[1], fromEditor=True)
                 # If we have an Episode ...
