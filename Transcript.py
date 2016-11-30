@@ -583,17 +583,25 @@ class Transcript(DataObject.DataObject):
 
         # If we have plaintext ...
         if plaintext != None:
-            # Add the Plain Text here.  The record has already been added if new, so we can ALWAYS use UPDATE.
+            # ... prepare to add the Plain Text here.  The record has already been added if new, so we can ALWAYS use UPDATE.
             query = """UPDATE Transcripts2
                          SET PlainText = %s
                          WHERE TranscriptNum = %s
                     """
             values = (plaintext, self.number)
-            # Adjust the query for sqlite if needed
-            query = DBInterface.FixQuery(query)
+        # If we do NOT have plaintext ...
+        else:
+            # ... prepare a query to set the plaintext field to NULL.
+            query = """UPDATE Transcripts2
+                         SET PlainText = NULL
+                         WHERE TranscriptNum = %s
+                    """
+            values = (self.number,)
+        # Adjust the query for sqlite if needed
+        query = DBInterface.FixQuery(query)
 
-            # Execure the Save query
-            c.execute(query, values)
+        # Execure the Save query
+        c.execute(query, values)
             
         c.close()
 

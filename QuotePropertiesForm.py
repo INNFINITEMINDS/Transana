@@ -743,7 +743,10 @@ class QuotePropertiesForm(Dialogs.GenForm):
                     # ... we need to add it to the list.  (Duplicates don't matter.)
                     self.obj.add_keyword(kwg, kw)
 
+            # Update the object's text ...
             self.obj.text = self.text_edit.GetFormattedSelection('XML')
+            # ... and plain text
+            self.obj.plaintext = self.text_edit.GetPlainTextSelection()
             # Keyword list is already updated via the OnAddKW() callback
         else:
             self.obj = None

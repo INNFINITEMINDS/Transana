@@ -262,6 +262,10 @@ class TranscriptPropertiesForm(Dialogs.GenForm):
                     if (self.obj.text[:5].lower() != '{\\rtf') and (self.obj.text[:5].lower() != '<?xml'):
                         # ... add "txt" to the start of the file to signal that it's probably a text file
                         self.obj.text = 'txt\n' + self.obj.text
+                    # If we've loaded new Transcript Text from a file, we need to clear the plaintext so that the
+                    # new transcript text will be added to the plaintext field rather than leaving it blank or with
+                    # outdated text.
+                    self.obj.plaintext = None
                     # Close the file
                     f.close()
                 # If exceptions are raised ...
