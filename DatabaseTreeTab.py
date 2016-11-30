@@ -111,6 +111,25 @@ class DatabaseTreeTab(wx.Panel):
         self.ControlObject=ControlObject
 
 
+    def CheckPlainText(self):
+        """ Check to see if a data object's plaintext needs to be populated, and if so, do it. """
+        # See if there are any records that need Plain Text extraction
+        plainTextCount = DBInterface.CountItemsWithoutPlainText()
+        # If there are ...
+        if plainTextCount > 0:
+            # ... import the Plain Text extractor (which cannot be imported above, at least not in it's alphabetic position)
+            import PlainTextUpdate
+            # Create the Plain Text extractor Dialog
+            tmpDlg = PlainTextUpdate.PlainTextUpdate(None, plainTextCount)
+            # Show the Dialog
+            tmpDlg.Show()
+            # Begin the conversion / extraction
+            tmpDlg.OnConvert()
+            # Clean up when done.
+            tmpDlg.Close()
+            tmpDlg.Destroy()
+
+
     def add_series(self):
         """User interface for adding a new Library."""
         # Create the Library Properties Dialog Box to Add a Library
@@ -293,6 +312,8 @@ class DatabaseTreeTab(wx.Panel):
                     # Unlock the Library, if we locked it.
                     if libraryLocked:
                         library.unlock_record()
+                    # Check to see if the Document's Plain Text field needs to be populated
+                    self.CheckPlainText()
                     # Return the Document Name
                     return document.id
                 # If the user pressed Cancel ...
@@ -677,7 +698,8 @@ class DatabaseTreeTab(wx.Panel):
                     sel = self.tree.GetSelections()[0]
                     # Sort the Transcript Node
                     self.tree.SortChildren(sel)
-
+                    # Check to see if the Document's Plain Text field needs to be populated
+                    self.CheckPlainText()
                     # return the Transcript ID so that it can be loaded
                     return transcript.id
                 # If the user pressed Cancel ...
@@ -808,6 +830,9 @@ class DatabaseTreeTab(wx.Panel):
 
             # Unlock the record regardless of what happens
             transcript.unlock_record()
+            # Check to see if the Document's Plain Text field needs to be populated
+            self.CheckPlainText()
+
         # Handle the exception if the record is locked
         except RecordLockedError, e:
             self.handle_locked_record(e, _("Transcript"), transcript.id)
