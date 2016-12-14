@@ -200,6 +200,14 @@ class GetFileNamePage(WizPage):
         # Add the selected File Name to the File Name text box
         self.txtSrcFileName.SetValue(self.fileName)
 
+        # Determine the file extension
+        (filename, extension) = os.path.splitext(self.fileName)
+        # Set the default encoding, based on the file extension selected (In Excel, CSV is CP1252 encoded, Unicode TXT is UTF-16 encoded.)
+        if extension.lower() == '.csv':
+            self.txtSrcEncoding.SetStringSelection('cp1252')
+        elif extension.lower() == '.txt':
+            self.txtSrcEncoding.SetStringSelection('utf_16')
+
     def OnSrcFileNameChange(self, event):
         """ Process changes to the File Name Text Box """
         # If we have a valid, existing file ...
