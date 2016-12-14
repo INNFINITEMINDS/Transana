@@ -82,12 +82,12 @@ class SynonymEditor(wx.Dialog):
         btnOK.Bind(wx.EVT_BUTTON, self.OnOK)
         btnCancel = wx.Button(self, wx.ID_CANCEL, _("Cancel"))
         btnCancel.Bind(wx.EVT_BUTTON, self.OnOK)
-        btnHelp = wx.Button(self, -1, _("Help"))
+##        btnHelp = wx.Button(self, -1, _("Help"))
 
         # Put the buttons in the  Button sizer
         btnSizer.Add(btnOK, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
         btnSizer.Add(btnCancel, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
-        btnSizer.Add(btnHelp, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
+##        btnSizer.Add(btnHelp, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
 
         # Add the Button Size to the Dialog Sizer
         mainSizer.Add(btnSizer, 0, wx.EXPAND)
@@ -95,6 +95,8 @@ class SynonymEditor(wx.Dialog):
         # Set the form's Main Sizer and enable auto-layout
         self.SetSizer(mainSizer)
         self.SetAutoLayout(True)
+        # Center on Screen
+        TransanaGlobal.CenterOnPrimary(self)
 
         # Set the Word Group and Words list data into the controls
         self.synonymGroup.SetValue(dataItem[0])
