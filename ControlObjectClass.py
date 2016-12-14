@@ -1274,6 +1274,8 @@ class ControlObject(object):
                         # ... then we clear the itemDataMap as the signal that the report needs to
                         # repopulate.
                         self.ReportWindows[reportNum].needsUpdate = True
+                        # Actually repopulate the report!
+                        self.ReportWindows[reportNum].PopulateWordFrequencies()
 
         # If we're in the multiuser version and have not been told not to call the Message Server ...
         if not TransanaConstants.singleUserVersion and not doNotCall:

@@ -4948,18 +4948,28 @@ def AddSynonym(synonymGroup, synonym):
     """ Add a Synonym to the Synonyms Table """
     # Get a Database cursor
     DBCursor = get_db().cursor()
-
-    # Create the INSERT query for the Synonyms table
-    query = """ INSERT INTO Synonyms2
-                  (SynonymGroup, Synonym)
-                VALUES
-                  (%s, %s) """
+    # MySQL and sqlite require different queries.
+    if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+        # Create the INSERT query for the Synonyms table that will not create duplicate records.
+        # (This was an issue in multiuser, if two users were working on the WFR at the same time.)
+        query = """INSERT INTO Synonyms2
+                     SELECT %s as SynonymGroup, %s as Synonym 
+                     FROM Synonyms2
+                     WHERE Synonym = %s
+                     HAVING COUNT(*) = 0;  """
+    elif TransanaConstants.DBInstalled in ['sqlite3']:
+        # Create the INSERT query for the Synonyms table that will not create duplicate records.
+        query = """ INSERT INTO Synonyms2
+                      (SynonymGroup, Synonym)
+                      SELECT %s, %s
+                      WHERE NOT EXISTS (SELECT 1 FROM Synonyms2 WHERE Synonym = %s)"""
+    
     # Set up the values, and encode them
-    values = (synonymGroup.encode(TransanaGlobal.encoding), synonym.encode(TransanaGlobal.encoding))
+    values = (synonymGroup.encode(TransanaGlobal.encoding), synonym.encode(TransanaGlobal.encoding), synonym.encode(TransanaGlobal.encoding))
     # Adjust query for sqlite, if needed
     query = FixQuery(query)
 
-    # Duplicate Insertion may raise an exception, which should be trapped
+    # Duplicate Insertion should no longer be an issue, but used to raise an exception, which needed to be trapped
     try:
         # Execute the query
         DBCursor.execute(query, values)
