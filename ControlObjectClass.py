@@ -263,10 +263,6 @@ class ControlObject(object):
             tmpDocument = Document.Document(document_number)
             # Load the Document into the Editor Interface (Transcripts and Documents act the same here!)
             self.TranscriptWindow.LoadTranscript(tmpDocument)
-            # If we have Text Search Items ...
-            if len(textSearchItems) > 0:
-                # ... set the Search Item
-                self.TranscriptWindow.SetSearchItem(textSearchItems)
             # Set the new Current Object
             self.currentObj = tmpDocument
 
@@ -289,6 +285,12 @@ class ControlObject(object):
 
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
+
+        # If we have Text Search Items ...
+        if len(textSearchItems) > 0:
+            # ... set the Search Item
+            self.TranscriptWindow.SetSearchItem(textSearchItems)
+
 
     def LoadTranscript(self, library, episode, transcript, textSearchItems=[]):
         """ When a Transcript is identified to trigger systemic loading of all related information,
@@ -372,10 +374,6 @@ class ControlObject(object):
                 self.VideoWindow.SetTitle(_("Media"))
             # Open Transcript in Transcript Window
             self.TranscriptWindow.LoadTranscript(transcriptObj) #flies off to transcriptionui.py
-            # If we have Text Search Items ...
-            if len(textSearchItems) > 0:
-                # ... set the Search Item
-                self.TranscriptWindow.SetSearchItem(textSearchItems)
 
             self.currentObj = episodeObj
 
@@ -385,15 +383,6 @@ class ControlObject(object):
             # Add the Transcript Number to the list that tracks the numbers of the open transcripts
             self.TranscriptNum[transcriptObj.number] = (self.TranscriptWindow.nb.GetSelection(), self.TranscriptWindow.nb.GetPage(self.TranscriptWindow.nb.GetSelection()).activePanel)
             
-##            # Add the Episode Clips Tab to the DataWindow
-##            self.DataWindow.AddItemsTab(libraryObj=libraryObj, dataObj=episodeObj)
-##
-##            # Add the Selected Episode Clips Tab, initially set to the beginning of the video file
-##            # TODO:  When the Transcript Window updates the selected text, we need to update this tab in the Data Window!
-##            self.DataWindow.AddSelectedItemsTab(libraryObj=libraryObj, dataObj=episodeObj, timeCode=0)
-##
-##            # Add the Keyword Tab to the DataWindow
-##            self.DataWindow.AddKeywordsTab(seriesObj=libraryObj, episodeObj=episodeObj)
             # Enable the transcript menu item options
             self.MenuWindow.SetTranscriptOptions(True)
 
@@ -415,6 +404,11 @@ class ControlObject(object):
                 # Open the File Management Window just as if the Menu Item was selected, which
                 # doesn't cause menu problems on OS X
                 self.MenuWindow.OnFileManagement(None)
+
+        # If we have Text Search Items ...
+        if len(textSearchItems) > 0:
+            # ... set the Search Item
+            self.TranscriptWindow.SetSearchItem(textSearchItems)
 
     def GetCurrentItemType(self):
         """ Report whether the currently-selected Item is None (nothing loaded), a Document, or a Transcript """
