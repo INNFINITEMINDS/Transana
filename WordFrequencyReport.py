@@ -715,8 +715,13 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
             # Get the current Synonyms for the Synonym Group
             newSynonyms = self.synonyms[synonymGroup]
-            # Delete the current synonym from this group
-            del(newSynonyms[newSynonyms.index(synonym)])
+            # Start exception handling
+            try:
+                # Delete the current synonym from this group
+                del(newSynonyms[newSynonyms.index(synonym)])
+            # If we get a ValueError, we can skip it.  It's where the synonym isn't found in the list.
+            except ValueError:
+                pass
 
             # If there is a single new synonym left in the list ...            
             if (len(newSynonyms) == 1) and (synonymGroup == newSynonyms[0]):
