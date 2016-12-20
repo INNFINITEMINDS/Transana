@@ -669,12 +669,8 @@ class ConfigData(object):
         # I think the above fails for Windows 98 and Windows Me.  So if we don't get
         # something from the above, let's fall back to using the Program Directory here.
         if defaultProfilePath == None:
-            defaultProfilePath = TransanaGlobal.programDir
+            defaultProfilePath = os.path.join(os.path.expanduser("~"), 'Transana 2')
         else:
             defaultProfilePath = os.path.join(defaultProfilePath, 'Transana 2')
-
-        # for testing non-English systems
-        # defaultProfilePath = u'E:\\Video\\\u4eb2\u4eb3\u4eb2'
-        # print "ConfigData.GetDefaultProfilePath() overridden"
 
         return defaultProfilePath

@@ -125,16 +125,23 @@ class Transana(wx.App):
         TransanaGlobal.configData = ConfigData.ConfigData()
         # If we are running from a BUILD instead of source code ...
         if hasattr(sys, "frozen"): #  or ('wxMac' in wx.PlatformInfo):
-            # See if the Default Profile Path exists.  If not ...
-            if not os.path.exists(TransanaGlobal.configData.GetDefaultProfilePath()):
-                # ... then create it (recursively).
-                os.makedirs(TransanaGlobal.configData.GetDefaultProfilePath())
-            # Build the path for the error log
-            path = os.path.join(TransanaGlobal.configData.GetDefaultProfilePath(), 'Transana_Error.log')
-            # redirect output to the error log
-            self.RedirectStdio(filename=path)
-            # Put a startup indicator in the Error Log
-            print "Transana started:", time.asctime()
+            try:
+                # See if the Default Profile Path exists.  If not ...
+                if not os.path.exists(TransanaGlobal.configData.GetDefaultProfilePath()):
+                    # ... then create it (recursively).
+                    os.makedirs(TransanaGlobal.configData.GetDefaultProfilePath())
+                # Build the path for the error log
+                path = os.path.join(TransanaGlobal.configData.GetDefaultProfilePath(), 'Transana_Error.log')
+                # redirect output to the error log
+                self.RedirectStdio(filename=path)
+                # Put a startup indicator in the Error Log
+                print "Transana started:", time.asctime()
+            except:
+                errmsg = unicode('Unable to create error log:\n  %s', 'utf8')
+                dlg = Dialogs.ErrorDialog(None, errmsg % (os.path.join(TransanaGlobal.configData.GetDefaultProfilePath(), 'Transana_Error.log'),))
+                dlg.ShowModal()
+                dlg.Destroy
+                
 
         # If no Language is defined ...
         if TransanaGlobal.configData.language == '':
