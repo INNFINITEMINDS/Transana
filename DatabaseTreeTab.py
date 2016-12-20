@@ -1163,30 +1163,30 @@ class DatabaseTreeTab(wx.Panel):
                                 # Send the "Update Keyword List" message
                                 TransanaGlobal.chatWindow.SendMessage("UKL %s" % msg)
 
-                            # If the Quote Properties Dialog was closed by pressing the Propagate Quote Changes button,
-                            # we can detect that by looking at the propagatePressed property of the form.  Now that the
-                            # Quote changes have been successfully saved, we need to deal with propagation if requested.
-                            if dlg.propagatePressed:
-                                # Start up the Propagate Changes tool, passing in the original Quote copy and the proper data
-                                # from the edited Quote.
-                                propagateDlg = PropagateChanges.PropagateClipChanges(self,
-                                                                                     "Quote",
-                                                                                     originalQuote,
-                                                                                     -1,
-                                                                                     quote.text,
-                                                                                     quote.plaintext,
-                                                                                     quote.id,
-                                                                                     quote.keyword_list)
+                        # If the Quote Properties Dialog was closed by pressing the Propagate Quote Changes button,
+                        # we can detect that by looking at the propagatePressed property of the form.  Now that the
+                        # Quote changes have been successfully saved, we need to deal with propagation if requested.
+                        if dlg.propagatePressed:
+                            # Start up the Propagate Changes tool, passing in the original Quote copy and the proper data
+                            # from the edited Quote.
+                            propagateDlg = PropagateChanges.PropagateClipChanges(self,
+                                                                                 "Quote",
+                                                                                 originalQuote,
+                                                                                 -1,
+                                                                                 quote.text,
+                                                                                 quote.plaintext,
+                                                                                 quote.id,
+                                                                                 quote.keyword_list)
 
-                            # Even if this computer doesn't need to update the keyword visualization others, might need to.
-                            if not TransanaConstants.singleUserVersion:
-                                # We need to pass the type of the current object, the Quote's record number, and
-                                # the Quote's Document number.
-                                if DEBUG:
-                                    print 'Message to send = "UKV %s %s %s"' % ('Quote', quote.number, quote.source_document_num)
-                                    
-                                if TransanaGlobal.chatWindow != None:
-                                    TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('Quote', quote.number, quote.source_document_num))
+                        # Even if this computer doesn't need to update the keyword visualization others, might need to.
+                        if not TransanaConstants.singleUserVersion:
+                            # We need to pass the type of the current object, the Quote's record number, and
+                            # the Quote's Document number.
+                            if DEBUG:
+                                print 'Message to send = "UKV %s %s %s"' % ('Quote', quote.number, quote.source_document_num)
+                                
+                            if TransanaGlobal.chatWindow != None:
+                                TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('Quote', quote.number, quote.source_document_num))
 
                         # If we do all this, we don't need to continue any more.
                         contin = False
