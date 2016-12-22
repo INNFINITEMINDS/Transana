@@ -325,7 +325,7 @@ class FilterDialog(wx.Dialog):
                 pnlVSizer.Add(self.showNestedData, 0, wx.TOP | wx.LEFT, 10)
                 text1 = wx.StaticText(self.reportContentsPanel, -1, _("(Unchecking this will cause items from nested collections to\nbe skipped even if checked on the Quote, Clip or Snapshot tabs.)"))
                 pnlVSizer.Add(text1, 0, wx.LEFT, 30)
-            if self.kwargs.has_key('showHyperlink') and (self.quoteFilter or self.clipFilter or self.snapshotFilter):
+            if self.kwargs.has_key('showHyperlink'):
                 self.showHyperlink = wx.CheckBox(self.reportContentsPanel, -1, _("Enable Hyperlinks"))
                 self.showHyperlink.SetValue(self.kwargs['showHyperlink'])
                 pnlVSizer.Add(self.showHyperlink, 0, wx.TOP | wx.LEFT, 10)

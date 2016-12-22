@@ -5298,6 +5298,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
             ReportGenerator.ReportGenerator(controlObject = self.parent.ControlObject,
                                             title=unicode(_("Transana Library Report"), 'utf8'),
                                             seriesName=library_name,
+                                            showHyperlink=True,
                                             showFile=True,
                                             showTime=True,
                                             showDocImportDate=True,
