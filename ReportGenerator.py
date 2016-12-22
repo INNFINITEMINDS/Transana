@@ -540,6 +540,9 @@ class ReportGenerator(wx.Object):
                             # ... and add the keyword entry to the Keyword Filter List if it's not already there.
                             self.keywordFilterList.append((kwg, kw, True))
 
+            # ShowKeywordSummary is not needed
+            self.showKeywordSummary = False
+
 ##                    # If we have a Snapshot ...
 ##                    if item['Type'] == 'Snapshot':
 ##                        # ... get a list of the Snapshot's Detail Coding
@@ -637,6 +640,9 @@ class ReportGenerator(wx.Object):
                                 # ... and add the keyword entry to the Keyword Filter List if it's not already there.
                                 self.keywordFilterList.append((kwg, kw, True))
 
+            # ShowKeywordSummary is not needed
+            self.showKeywordSummary = False
+
         # If a Library Name is passed in ...            
         elif self.seriesName != None:
             # ...  add a subtitle
@@ -689,6 +695,9 @@ class ReportGenerator(wx.Object):
                         if (kwg, kw, True) not in self.keywordFilterList:
                             # ... add them to the Keyword Filter List
                             self.keywordFilterList.append((kwg, kw, True))
+
+            # ShowKeywordSummary is not needed
+            self.showKeywordSummary = False
 
         # If this report is called for a SearchLibraryResult, we build the majorList based on the contents of the Tree Control.
         elif (self.searchSeries != None) and (self.treeCtrl != None):
@@ -767,6 +776,9 @@ class ReportGenerator(wx.Object):
                         if (kwg, kw, True) not in self.keywordFilterList:
                             # ... add them to the Keyword Filter List
                             self.keywordFilterList.append((kwg, kw, True))
+
+            # ShowKeywordSummary is not needed
+            self.showKeywordSummary = False
 
 ##            print "minorList:"
 ##            for x in range(len(minorList)):
@@ -891,6 +903,9 @@ class ReportGenerator(wx.Object):
                             if (kwg, kw, True) not in self.keywordFilterList:
                                 # ... and add the keyword entry to the Keyword Filter List if it's not already there.
                                 self.keywordFilterList.append((kwg, kw, True))
+
+            # ShowKeywordSummary is not needed
+            self.showKeywordSummary = False
 
         # Apply Default Filter here, if appropriate
         self.OnFilter(None)
@@ -3175,6 +3190,7 @@ class ReportGenerator(wx.Object):
                                                   documentFilter=documentFilter,
                                                   keywordFilter=keywordFilter,
                                                   reportContents=True,
+                                                  showHyperlink=self.showHyperlink,
                                                   showFile=self.showFile,
                                                   showTime=self.showTime,
                                                   showDocImportDate=self.showDocImportDate,
@@ -3220,6 +3236,7 @@ class ReportGenerator(wx.Object):
                 if keywordFilter:
                     self.keywordFilterList = dlgFilter.GetKeywords()
                     self.showKeywords = dlgFilter.GetShowKeywords()
+                self.showHyperlink = dlgFilter.GetShowHyperlink()
                 # Remember the configuration name for later reuse
                 self.configName = dlgFilter.configName
                 # ... and signal the TextReport that the filter is to be applied.

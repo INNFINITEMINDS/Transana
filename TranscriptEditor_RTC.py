@@ -3576,10 +3576,12 @@ class TranscriptEditor(RichTextEditCtrl):
                 # Get the original dimensions of the image
                 imgWidth = image.GetWidth()
                 imgHeight = image.GetHeight()
+                # If "Limit Image Width" is set to True in Configuration ...
                 if TransanaGlobal.configData.maxTranscriptImageWidth == 1:
-                    # We need the SMALLER of the current image size and the current Transcript Window size
+                    # We need the SMALLER of an arbitrary maximum image width of 1024 and the current Transcript Window size
                     # (Adjust width for scrollbar size!)
-                    maxWidth = min(520, float(imgWidth), (self.GetSize()[0] - 20.0) * 0.98)
+                    maxWidth = min(1024, float(imgWidth), (self.GetSize()[0] - 20.0) * 0.98)
+                # If "Limit Image Width" is UNCHECKED in Configuration ...
                 else:
                     # We need the SMALLER of the current image size and the current Transcript Window size
                     # (Adjust width for scrollbar size!)
