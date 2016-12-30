@@ -244,8 +244,6 @@ class Document(DataObject.DataObject):
         else:
             # ... Fetch the query results ...
             r = DBInterface.fetch_named(c)
-            # Load the data into the Transcript Object
-            self._load_row(r)
             # If sqlite and not results are found ...
             if (TransanaConstants.DBInstalled == 'sqlite3') and (r == {}): 
                 # ... close the database cursor ...
@@ -254,6 +252,8 @@ class Document(DataObject.DataObject):
                 self.clear()
                 # ... and raise an exception
                 raise RecordNotFoundError, (num, 0)
+            # Load the data into the Transcript Object
+            self._load_row(r)
             # Refresh the Keywords
             self.refresh_keywords()
             # Refresh the Quote Position Dictionary

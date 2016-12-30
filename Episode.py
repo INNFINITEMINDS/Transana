@@ -204,8 +204,6 @@ class Episode(DataObject.DataObject):
         else:
             # Get the data from the cursor
             r = DBInterface.fetch_named(c)
-            # Load the data into the Episode object
-            self._load_row(r)
             # If sqlite and no data is returned ...
             if (TransanaConstants.DBInstalled == 'sqlite3') and (r == {}):
                 # .. close the cursor ...
@@ -214,6 +212,8 @@ class Episode(DataObject.DataObject):
                 self.clear()
                 # ... and raise an exception
                 raise RecordNotFoundError, (num, 0)
+            # Load the data into the Episode object
+            self._load_row(r)
             # Load Additional Media Files, which aren't handled in the "old" code
             self.load_additional_vids()
             # Refresh the Keywords
