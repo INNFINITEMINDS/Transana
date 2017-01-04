@@ -1,4 +1,4 @@
-# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2017 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -53,9 +53,9 @@ if workshopVersion:
     expirationdate = TransanaConfigConstants.xpdt
 
 # Program Version Number
-versionNumber = '3.04a1'
+versionNumber = '3.04a7'
 # Build Number
-buildNumber = '304a1'
+buildNumber = '304a7'
 # Modify for Multi-user if appropriate
 if not singleUserVersion:
     versionNumber = versionNumber + '-MU'

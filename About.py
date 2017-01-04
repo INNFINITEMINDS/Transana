@@ -1,5 +1,5 @@
 # -*- coding: cp1252 -*-
-# Copyright (C) 2002 - 2016 Spurgeon Woods LLC
+# Copyright (C) 2002 - 2017 Spurgeon Woods LLC
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -87,7 +87,7 @@ class AboutBox(wx.Dialog):
         mainSizer.Add(version, 0, wx.ALIGN_CENTER | wx.BOTTOM | wx.LEFT | wx.RIGHT, 12)
 
         # Create a label for the Program Copyright
-        str = _("Copyright 2002-2016\nSpurgeon Woods LLC")
+        str = _("Copyright 2002 - 2017\nSpurgeon Woods LLC")
         copyright = wx.StaticText(self, -1, str, style=wx.ALIGN_CENTRE)
         # Apply the last specified font (from Program Version) to the copyright label
         font = self.GetFont()
