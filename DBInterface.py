@@ -176,7 +176,7 @@ def SetTableType(hasInnoDB, query):
         #        a German Transana XML database someone sent to me, and switching databases was the only way I could find to
         #        fix the problem.  Therefore, the BDB tables will probably never be used, as I think they're always present
         #        if the BDB tables are.
-        if TransanaGlobal.DBVersion >= u'5.0':
+        if float(TransanaGlobal.DBVersion) >= 5.0:
             if hasInnoDB:
                 query = query + 'ENGINE=InnoDB'
             else:
@@ -187,7 +187,7 @@ def SetTableType(hasInnoDB, query):
             else:
                 query = query + 'TYPE=BDB'
 
-        if TransanaGlobal.DBVersion >= u'4.1':
+        if float(TransanaGlobal.DBVersion) >= 4.1:
             # Add the Character Set specification
             query += '  CHARACTER SET %s' % TransanaGlobal.encoding
 
@@ -971,17 +971,8 @@ def establish_db_exists(dbToOpen=None, usePrompt=True):
                 if p1 == 'YES':
                     hasInnoDB = True
         # Then let's check the MySQL version.  MySQL dropped have_bdb a long time ago, and have_innodb with 5.6.x
-        # Define a "SHOW VARIABLES" Query
-        query = "SHOW VARIABLES LIKE 'version'"
-        # Execute the Query
-        dbCursor.execute(query)
-        # Look at the Results Set
-        version = dbCursor.fetchone()[1]
-        # Break the MySQL version into major, minor, and sub-minor sections based on decimal points in the version number
-        version = version.split('.')
-
-        # If we have MySQL version 5.6 or higher ...
-        if (int(version[0]) >= 5) and (int(version[1]) >= 6):
+        # If we have MySQL version 5.6 or higher (including MariaDB) ...
+        if float(TransanaGlobal.DBVersion) >= 5.6:
             # ... then InnoDB IS built in, even though there's no longer a variable for it!
             hasInnoDB = True
 
@@ -2115,12 +2106,23 @@ def get_db(dbToOpen=None, usePrompt=True):
                     # Query the Database about what Database Names have been defined
                     dbCursor.execute('SELECT VERSION()')
                     vs = dbCursor.fetchall()
-                    for v in vs:
-                        TransanaGlobal.DBVersion = v[0][:3]
+                    # Isolate the digital part of the version name.
+                    # MariaDB threw a wrench in here with version 10!
+                    try:
+                        # Split the version text at decimal points
+                        v = vs.split('.')
+                        # Recombine the first two parts, which should be numeric, only.
+                        TransanaGlobal.DBVersion = u'%s.%s' % (v[0], v[1])
+                    except:
+                        for v in vs:
+                            if v[0][1] == '.':
+                                TransanaGlobal.DBVersion = v[0][:3]
+                            else:
+                                TransanaGlobal.DBVersion = v[0][:4]
 
-                        if DEBUG:
-                            print "MySQL Version =", TransanaGlobal.DBVersion, type(TransanaGlobal.DBVersion)
-                            
+                    if DEBUG:
+                        print "MySQL Version =", TransanaGlobal.DBVersion, type(TransanaGlobal.DBVersion)
+
                 try:
                     # If we made a connection to MySQL...
                     if _dbref != None:
@@ -2160,7 +2162,7 @@ def get_db(dbToOpen=None, usePrompt=True):
                                 return None
 
                         # If we have MySQL 4.1 or later, we have UTF-8 support and should use it.
-                        if TransanaGlobal.DBVersion >= u'4.1':
+                        if float(TransanaGlobal.DBVersion) >= 4.1:
                             # Get a Database Cursor
                             dbCursor = _dbref.cursor()
                             # Set Character Encoding settings
@@ -2202,8 +2204,7 @@ def get_db(dbToOpen=None, usePrompt=True):
                             else:
                                 TransanaGlobal.encoding = 'utf8'  # 'latin1'
 
-
-                            dbCursor.execute('USE %s', (databaseName.encode(TransanaGlobal.encoding), ))
+                            dbCursor.execute('USE %s' % databaseName.encode(TransanaGlobal.encoding))
 
                         if TransanaConstants.demoVersion:
                             # Get a Database Cursor
@@ -2284,7 +2285,7 @@ def get_db(dbToOpen=None, usePrompt=True):
                                     tempDatabaseName = databaseName
 
                                 # If MySQL is version 4.1 or greater, we can use explicit Character Sets including UTF8
-                                if TransanaGlobal.DBVersion >= u'4.1':
+                                if float(TransanaGlobal.DBVersion) >= 4.1:
                                     query = 'CREATE DATABASE IF NOT EXISTS %s CHARACTER SET %s' % (tempDatabaseName, TransanaGlobal.encoding)
                                 else:
                                     query = 'CREATE DATABASE IF NOT EXISTS %s' % tempDatabaseName
@@ -2347,7 +2348,7 @@ def get_db(dbToOpen=None, usePrompt=True):
                         _dbref.close()
                         _dbref = None
 
-                    elif (TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server'] and isinstance(e, _mysql_exceptions.ProgrammingError, e)):
+                    elif (TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server'] and isinstance(e, _mysql_exceptions.ProgrammingError)):
 
                         if DEBUG:
 

@@ -1565,7 +1565,7 @@ class ControlObject(object):
         # Close the existing database connection
         DBInterface.close_db()
         # Reset the global encoding to UTF-8 if the Database supports it
-        if (TransanaGlobal.DBVersion >= u'4.1') or \
+        if (float(TransanaGlobal.DBVersion) >= 4.1) or \
            (not TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']):
             TransanaGlobal.encoding = 'utf8'
         # Otherwise, if we're in Russian, change the encoding to KOI8r
