@@ -27,6 +27,9 @@ import re
 import wx
 import wx.lib.mixins.listctrl as ListCtrlMixins
 
+# import WordCloud module
+import wordcloud
+
 
 # If running stand-alone ...
 if __name__ == '__main__':
@@ -180,29 +183,31 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         height = rect[3] * .80
 
         # Build the Report Title
-        self.title = unicode(_('Word Frequency Report'), 'utf8') + u' '
+        self.title = unicode(_('Word Frequency Report'), 'utf8')
         # Get the Item Name and Item Data from the tree node passed in.
         itemName = tree.GetItemText(startNode)
         itemData = tree.GetPyData(startNode)
 
         # Build the Title based on the node type passed in
         if itemData.nodetype in ['LibraryRootNode']:
-            self.title += unicode(_('for all Libraries'), 'utf8')
+            self.subtitle = unicode(_('for all Libraries'), 'utf8')
         elif itemData.nodetype in ['LibraryNode', 'SearchLibraryNode']:
-            self.title += unicode(_('for Library "%s"'), 'utf8') % itemName
+            self.subtitle = unicode(_('for Library "%s"'), 'utf8') % itemName
         elif itemData.nodetype in ['DocumentNode', 'SearchDocumentNode']:
-            self.title +=unicode( _('for Document "%s"'), 'utf8') % itemName
+            self.subtitle = unicode( _('for Document "%s"'), 'utf8') % itemName
         elif itemData.nodetype in ['EpisodeNode', 'SearchEpisodeNode']:
-            self.title += unicode(_('for Episode "%s"'), 'utf8') % itemName
+            self.subtitle = unicode(_('for Episode "%s"'), 'utf8') % itemName
         elif itemData.nodetype in ['TranscriptNode', 'SearchTranscriptNode']:
-            self.title += unicode(_('for Transcript "%s"'), 'utf8') % itemName
+            self.subtitle = unicode(_('for Transcript "%s"'), 'utf8') % itemName
         elif itemData.nodetype in ['CollectionsRootNode']:
-            self.title += unicode(_('for all Collections'), 'utf8')
+            self.subtitle = unicode(_('for all Collections'), 'utf8')
         elif itemData.nodetype in ['CollectionNode', 'SearchCollectionNode']:
-            self.title += unicode(_('for Collection "%s"'), 'utf8') % itemName
+            self.subtitle = unicode(_('for Collection "%s"'), 'utf8') % itemName
+        else:
+            self.subtitle = u''
 
         # Create the basic Frame structure with a white background
-        wx.Frame.__init__(self, parent, -1, self.title, size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
+        wx.Frame.__init__(self, parent, -1, self.title + u' ' + self.subtitle, size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
         self.SetBackgroundColour(wx.WHITE)
         
         # Set the report's icon
@@ -237,9 +242,21 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Add a separator
         self.toolbar.AddSeparator()
 
-        # Add a Save / Print button
-        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.SavePrint.GetBitmap(), size=(24, 24))
-        self.printReport.SetToolTipString(_("Save / Print"))
+##        # Add a Save / Print button
+##        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.SavePrint.GetBitmap(), size=(24, 24))
+##        self.printReport.SetToolTipString(_("Save / Print"))
+##        self.toolbar.AddControl(self.printReport)
+##        self.printReport.Bind(wx.EVT_BUTTON, self.OnPrintReport)
+##
+        # Add a Save button
+        self.saveReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.Save16.GetBitmap(), size=(24, 24))
+        self.saveReport.SetToolTipString(_("Save"))
+        self.toolbar.AddControl(self.saveReport)
+        self.saveReport.Bind(wx.EVT_BUTTON, self.OnSave)
+
+        # Add a Print button
+        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.Print.GetBitmap(), size=(24, 24))
+        self.printReport.SetToolTipString(_("Print"))
         self.toolbar.AddControl(self.printReport)
         self.printReport.Bind(wx.EVT_BUTTON, self.OnPrintReport)
 
@@ -325,6 +342,22 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.notebook.AddPage(resultsPanel, _("Results"))
 
 
+        # Add a Panel for a Word Cloud output tab
+        self.wordCloudPanel = wx.Panel(self.notebook, -1)
+        
+        # Add a Sizer for the Word Cloud panel
+        pnl4Sizer = wx.BoxSizer(wx.VERTICAL)
+        # Add a Static Bitmap to hold the Word Cloud
+        self.wordCloud = wx.StaticBitmap(self.wordCloudPanel, -1)
+        # Add the Word Clound Bitmap to the Panel's Sizer
+        pnl4Sizer.Add(self.wordCloud, 1, wx.EXPAND | wx.ALL, 10)
+        # Connect the Sizer to the Panel
+        self.wordCloudPanel.SetSizer(pnl4Sizer)
+        
+        # Add a page to the Notebook control for the Word Cloud tab
+        self.notebook.AddPage(self.wordCloudPanel, _("Word Cloud"))
+
+        
         # Add a Panel for a Synonym Seeking tab
         synonymPanel = wx.Panel(self.notebook, -1)
 
@@ -363,70 +396,67 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Add a page to the Notebook control for the Synonym Seeking tab
         self.notebook.AddPage(synonymPanel, _("Group Words by Pattern"))
 
-
-
-
-##        # Add a Panel for a Word Cloud output tab
-##        self.wordCloudPanel = wx.Panel(self.notebook, -1)
-##        self.wordCloudPanel.SetBackgroundColour(wx.BLUE)
-##        
-##        # Add a page to the Notebook control for the Word Cloud tab
-##        self.notebook.AddPage(self.wordCloudPanel, _("Word Cloud"))
-
-
-
-        
         # Add a Panel for an Options tab
         self.optionsPanel = wx.Panel(self.notebook, -1)
         self.optionsPanel.SetBackgroundColour(wx.WHITE)
         # Create a Sizer for the Options Panel
-        pnl2Sizer = wx.FlexGridSizer(rows=5, cols=4, hgap=20, vgap=20)
+        pnl2Sizer = wx.FlexGridSizer(rows=6, cols=4, hgap=20, vgap=20)
         self.optionsPanel.SetSizer(pnl2Sizer)
 
         # Minimum Word Frequency
         txt1 = wx.StaticText(self.optionsPanel, -1, _("Minimum Frequency:"), style=wx.ALIGN_RIGHT)
-        self.minFrequency = wx.TextCtrl(self.optionsPanel, -1, "1")
+        self.minFrequency = wx.TextCtrl(self.optionsPanel, -1, str(TransanaGlobal.configData.wordCountFrequency))
 
         # Minimum Word Length
         txt2 = wx.StaticText(self.optionsPanel, -1, _("Minimum Word Length:"), style=wx.ALIGN_RIGHT)
-        self.minLength = wx.TextCtrl(self.optionsPanel, -1, "1")
+        self.minLength = wx.TextCtrl(self.optionsPanel, -1, str(TransanaGlobal.configData.wordCountLength))
 
         # Clear Word Groupings
-        self.btnClearAll = wx.Button(self.optionsPanel, -1, _("Clear all Word Grouping Data"), style=wx.ALIGN_CENTER)
+        self.btnClearAll = wx.Button(self.optionsPanel, -1, _("Clear all Word Grouping Data"), style=wx.ALIGN_LEFT)
         self.btnClearAll.Bind(wx.EVT_BUTTON, self.OnClearAllWordGroupings)
+
+        # Word Cloud Font
+        txt3 = wx.StaticText(self.optionsPanel, -1, _("Word Cloud") + u' ' + _('Font:'), style=wx.ALIGN_RIGHT)
+        self.wordCloudFont = wx.TextCtrl(self.optionsPanel, -1, TransanaGlobal.configData.wordCloudFont)
 
         # Use the GridSizer to center our data entry fields both horizontally and vertically
         pnl2Sizer.AddMany([((1, 1), 12, wx.EXPAND),
                            ((1, 1), 3, wx.EXPAND),
-                           ((1, 1), 1, wx.EXPAND),
-                           ((1, 1), 14, wx.EXPAND),
+                           ((1, 1), 6, wx.EXPAND),
+                           ((1, 1), 9, wx.EXPAND),
 
                            ((1, 1), 12, wx.EXPAND),
                            (txt1, 3, wx.EXPAND | wx.ALIGN_RIGHT),
-                           (self.minFrequency, 1, wx.EXPAND),
-                           ((1, 1), 14, wx.EXPAND),
+                           (self.minFrequency, 6, wx.EXPAND),
+                           ((1, 1), 0, wx.EXPAND),
 
                            ((1, 1), 12, wx.EXPAND),
                            (txt2, 3, wx.EXPAND | wx.ALIGN_RIGHT),
-                           (self.minLength, 1, wx.EXPAND),
-                           ((1, 1), 14, wx.EXPAND),
+                           (self.minLength, 6, wx.EXPAND),
+                           ((1, 1), 9, wx.EXPAND),
                            
                            ((1, 1), 12, wx.EXPAND),
                            ((1, 1), 3, wx.EXPAND),
-                           (self.btnClearAll, 1, wx.EXPAND),
-                           ((1, 1), 14, wx.EXPAND),
+                           (self.btnClearAll, 6),
+                           ((1, 1), 9, wx.EXPAND),
 
                            ((1, 1), 12, wx.EXPAND),
+                           (txt3, 3, wx.EXPAND | wx.ALIGN_RIGHT),
+                           (self.wordCloudFont, 6, wx.EXPAND),
+                           ((1, 1), 9, wx.EXPAND),
+                           
+                           ((1, 1), 12, wx.EXPAND),
                            ((1, 1), 3, wx.EXPAND),
-                           ((1, 1), 1, wx.EXPAND),
-                           ((1, 1), 14, wx.EXPAND)])
+                           ((1, 1), 6, wx.EXPAND),
+                           ((1, 1), 9, wx.EXPAND)])
 
         # Make the top and bottom rows growable to center vertically
         pnl2Sizer.AddGrowableRow(0, 12)
-        pnl2Sizer.AddGrowableRow(4, 14)
+        pnl2Sizer.AddGrowableRow(5, 14)
         # Make the left and right columns growable to center horizontally
-        pnl2Sizer.AddGrowableCol(0, 12)
-        pnl2Sizer.AddGrowableCol(3, 14)
+        pnl2Sizer.AddGrowableCol(0, 10)
+        pnl2Sizer.AddGrowableCol(2, 10)
+        pnl2Sizer.AddGrowableCol(3, 10)
         
         # Assign the Results Panel Sizer to the Results Panel
         self.optionsPanel.SetSizer(pnl2Sizer)
@@ -434,12 +464,14 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.notebook.AddPage(self.optionsPanel, _("Options"))
         
         # Add the Notebook control to the form's Main Sizer
-        mainSizer.Add(self.notebook, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 10)
+        mainSizer.Add(self.notebook, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Add in the Column Sorter mixin to make the results panel sortable
         ListCtrlMixins.ColumnSorterMixin.__init__(self, 3)
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
 
+        # Create a flag that indicates whether we need to populate the Word Frequencies table
+        self.needToPopulateWordFrequencies = True
         # Populate the Word Frequency Results
         self.PopulateWordFrequencies()
 
@@ -457,6 +489,13 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         if self.ControlObject != None:
             # ... register this report with the Control Object (which adds it to the Windows Menu)
             self.ControlObject.AddReportWindow(self)
+
+        # Add a Resize Event handler (needed for Word Cloud display)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+        # Add an Idle Event handler (needed for Word Cloud display)
+        self.Bind(wx.EVT_IDLE, self.OnIdle)
+        # Initialize the Word Cloud redraw signal to False
+        self.needToDrawWordCloud = False
 
         # Define the Form Close event, which removes the report from Transana's Window menu
         self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -480,10 +519,33 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         
     def OnNotebookPageChanged(self, event):
         """ Handle Notebook Page Change Events """
-        # Allow the underlying Control to process the Page Change
-        event.Skip()
+        # Allow the underlying Control to process the Page Change, unless this is called with None
+        if event:
+            event.Skip()
+            sel = event.GetSelection()
+            # If we've been on the Options tab ...
+            if event.GetOldSelection() == 3:
+                # ... we need to re-do the Word Frequencies when the time comes.
+                self.needToPopulateWordFrequencies = True
+                try:
+                    TransanaGlobal.configData.wordCountFrequency = int(self.minFrequency.GetValue())
+                except:
+                    pass
+                try:
+                    TransanaGlobal.configData.wordCountLength = int(self.minLength.GetValue())
+                except:
+                    pass
+                # If the user has changed the Word Cloud Font ...
+                if self.wordCloudFont.GetValue() != TransanaGlobal.configData.wordCloudFont:
+                    # ... change the font in the Configuration file ...
+                    TransanaGlobal.configData.wordCloudFont = self.wordCloudFont.GetValue()
+                # ... and save the changes
+                TransanaGlobal.configData.SaveConfiguration()
+        else:
+            sel = self.notebook.GetSelection()
+                
         # If we're changing to the Results Tab ...
-        if event.GetSelection() == 0:
+        if sel == 0:
             # ... enable the check and print buttons
             self.checkAll.Enable(True)
             self.uncheckAll.Enable(True)
@@ -491,10 +553,71 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         
             # If we're moving to the Results page FROM the Options page ...
             # (The Word Groups page updates the Results as needed)
-            if event.GetOldSelection() == 2:
+            if self.needToPopulateWordFrequencies:
                 # ... refresh the Results!
                 self.PopulateWordFrequencies()
-                
+
+        # If we're chaning to the Word Cloud tab ...
+        elif sel == 1:
+            
+            # ... disable the check and print buttons
+            self.checkAll.Enable(False)
+            self.uncheckAll.Enable(False)
+            self.printReport.Enable(True)
+
+            # Set up a list to hold word frequency information
+            frequencies = []
+
+            # Start exception handling
+            try:
+                # Convert the Minimum Frequency from the Options tab
+                minFrequency = int(self.minFrequency.GetValue())
+            # If it's not an integer, ignore it!
+            except:
+                minFrequency = 1
+            # Start separate exception handling process
+            try:
+                # Try to convert the Minimum Word Length from the Options Tab
+                minLength = int(self.minLength.GetValue())
+            # If it's not an integer, ignore it!
+            except:
+                minLength = 1
+
+            # For each Word Group : Frequency pair in the data ...
+            for key, data in self.itemDataMap.items():
+                # If the word groups shoud be displayed ...
+                if (data[0] != 'Do Not Show Group') and (data[1] >= minFrequency) and (len(data[0]) >= minLength):
+                    # ... add it to the frequencies list
+                    frequencies.append((self.itemDataMap[key][0], self.itemDataMap[key][1]))
+
+            # Get the size of the Word Cloud image on the screen
+            (w, h) = self.wordCloud.GetSize()
+
+            # Add Stop Words (words not to be shown) here.
+            #
+            # NOTE:  The Stop Words concept is NOT IMPLEMENTED at this time.  If a word appears in the Frequencies report,
+            #        it will appear in the word cloud.  If you don't want it, add it to the Do Not Show group.
+            #        I may, in the future, add the ability to exclude selected word groups that appear in the Report from
+            #        the Word Cloud.  That would be implemented here by adding the terms to the stopWords set.
+            #
+            stopWords = set(wordcloud.STOPWORDS)
+
+            # Configure the WordCloud graphic
+            wordcloud1 = wordcloud.WordCloud(width = w, height = h, min_font_size = 7, background_color = "white",
+                                             stopwords = stopWords, font_path = TransanaGlobal.configData.wordCloudFont,
+                                             relative_scaling = 0.25)  # max_words = 500
+            # Generate the WordCloud graphic based on frequencies (rather than from plain text)
+            wordcloud1.generate_from_frequencies(frequencies)
+
+            # Convert the WordCloud image (a PIL / Pillow image) to a wx.Image to a wx.Bitmap
+            wordcloudImageObj = wordcloud1.to_image()
+            imageObj = wx.EmptyImage(w, h)
+            imageObj.SetData(wordcloudImageObj.convert("RGB").tobytes())
+            bitmapObj = wx.BitmapFromImage(imageObj)
+
+            # Place the Bitmap on the screen
+            self.wordCloud.SetBitmap(bitmapObj)
+            
         else:
             # ... disable the check and print buttons
             self.checkAll.Enable(False)
@@ -858,22 +981,23 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... then we'll use that!
             itemData = self.itemDataMap
 
+        # Start exception handling
+        try:
+            # Convert the Minimum Frequency from the Options tab
+            minFrequency = int(self.minFrequency.GetValue())
+        # If it's not an integer, ignore it!
+        except:
+            minFrequency = 1
+        # Start separate exception handling process
+        try:
+            # Try to convert the Minimum Word Length from the Options Tab
+            minLength = int(self.minLength.GetValue())
+        # If it's not an integer, ignore it!
+        except:
+            minLength = 1
+
         # Convert the extracted data to the form needed for the ColumnSorterMixin
         for key, data in itemData.items():
-            # Start exception handling
-            try:
-                # Convert the Minimum Frequency from the Options tab
-                minFrequency = int(self.minFrequency.GetValue())
-            # If it's not an integer, ignore it!
-            except:
-                minFrequency = 1
-            # Start separate exception handling process
-            try:
-                # Try to convert the Minimum Word Length from the Options Tab
-                minLength = int(self.minLength.GetValue())
-            # If it's not an integer, ignore it!
-            except:
-                minLength = 1
 
             # If the item is not part of the "Do Not Show" Group, and it meets the minimum frequency and length requirements ...
             if (data[0] != "Do Not Show Group") and (data[1] >= minFrequency) and (len(data[0]) >= minLength):
@@ -920,6 +1044,8 @@ I'm Ellen Feiss, and I'm a student!"""
         self.resultsList.Update()
         # Signal that the control's itemDataMap is no longer being updated right now!
         self.isUpdating = False
+        # Reset the flag indicating we need to populate Word Frequencies
+        self.needToPopulateWordFrequencies = False
 
     def GetListCtrl(self):
         """ Pointer to the Results List, required for the ColumnSorterMixin """
@@ -1160,6 +1286,32 @@ I'm Ellen Feiss, and I'm a student!"""
             dlg.ShowModal()
             dlg.Destroy()
 
+    def OnSave(self, event):
+        """ Handle requests for a printable report """
+        # If SAVE is pressed on the Word Frequency Report data tab ...
+        if self.notebook.GetSelection() == 0:
+            # Create a Report Frame
+            self.report = TextReport.TextReport(self, -1, _("Word Frequency Report"), self.ConstructReport)
+            # To speed report creation, freeze GUI updates based on changes to the report text
+            self.report.reportText.Freeze()
+            # Trigger the ReportText method that causes the report to be displayed.
+            self.report.CallDisplay()
+            # Now that we're done, remove the freeze
+            self.report.reportText.Thaw()
+        # If SAVE is pressed on the Word Cloud tab ...
+        elif self.notebook.GetSelection() == 1:
+            dlg = wx.FileDialog(self, _("Save File"), wildcard=_("JPEG Files|*.jpg"), style=wx.SAVE|wx.OVERWRITE_PROMPT|wx.CHANGE_DIR)
+            if dlg.ShowModal() == wx.ID_OK:
+                # File Extension is not automatically appended on Mac.  Let's ensure it's there.
+                filename = dlg.GetPath()
+                (fn, ext) = os.path.splitext(filename)
+                if ext == '':
+                    filename = filename + '.jpg'
+                # Save the existing Bitmap in the graphic control
+                self.wordCloud.GetBitmap().SaveFile(filename, wx.BITMAP_TYPE_JPEG)
+            dlg.Destroy()
+            
+
     def OnPrintReport(self, event):
         """ Handle requests for a printable report """
         # Create a Report Frame
@@ -1177,25 +1329,43 @@ I'm Ellen Feiss, and I'm a student!"""
         reportText.SetReadOnly(False)
         # Set the font for the Report Title
         reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 16, fontBold = True, fontUnderline = True,
-                               parAlign = wx.TEXT_ALIGNMENT_CENTER, parSpacingAfter = 42)
+                               parAlign = wx.TEXT_ALIGNMENT_CENTER, parSpacingAfter = 20)
         # Add the Report Title
         reportText.WriteText(self.title)
         reportText.Newline()
-        # Set the Style for the main report header
-        reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 14, fontBold = True, fontUnderline = True,
-                               parAlign = wx.TEXT_ALIGNMENT_LEFT, parLeftIndent = (0, 900), parSpacingAfter = 12,
-                               parTabs=[600, 900])
-        # Write column headers
-        reportText.WriteText("%s\t%s\t%s\n" % (_("Word"), _("Frequency"), _("Word Group") ))
-        # Adjust the style for the main report data
-        reportText.SetTxtStyle(fontSize = 12, fontBold = False, fontUnderline = False)
-        # Iterate through the items in the Results List ...
-        for count in range(self.resultsList.GetItemCount()):
-            # ... and add the data to the report
-            reportText.WriteText("%s\t%s\t%s\n" % (self.resultsList.GetItemText(count, 0), self.resultsList.GetItemText(count, 1),
-                                                self.resultsList.GetItemText(count, 2) ))
+        # Add the Report subtitle
+        if self.subtitle != u'':
+            # ... set the font for the subtitle ...
+            reportText.SetTxtStyle(fontSize = 10, fontBold = False, fontUnderline = False, parSpacingAfter = 42)
+            # ... and insert the spacer and the subtitle.
+            reportText.WriteText(self.subtitle)
+            reportText.Newline()
+
+        # if we're constructing the Word Frequency (text) Report ...
+        if self.notebook.GetSelection() == 0:
+            # Set the Style for the main report header
+            reportText.SetTxtStyle(fontFace = 'Courier New', fontSize = 14, fontBold = True, fontUnderline = True,
+                                   parAlign = wx.TEXT_ALIGNMENT_LEFT, parLeftIndent = (0, 900), parSpacingAfter = 12,
+                                   parTabs=[600, 900])
+            # Write column headers
+            reportText.WriteText("%s\t%s\t%s\n" % (_("Word"), _("Frequency"), _("Word Group") ))
+            # Adjust the style for the main report data
+            reportText.SetTxtStyle(fontSize = 12, fontBold = False, fontUnderline = False)
+            # Iterate through the items in the Results List ...
+            for count in range(self.resultsList.GetItemCount()):
+                # ... and add the data to the report
+                reportText.WriteText("%s\t%s\t%s\n" % (self.resultsList.GetItemText(count, 0), self.resultsList.GetItemText(count, 1),
+                                                    self.resultsList.GetItemText(count, 2) ))
+
+        # If we're constructing a Word Cloud (graphic) Report ...
+        elif self.notebook.GetSelection() == 1:
+            reportText.Newline()
+            image = self.wordCloud.GetBitmap().ConvertToImage()
+            
+            reportText.WriteImage(image)
 
     def OnHelp(self, event):
+        """ Handle the Help Button press """
         # ... call Help!
         self.ControlObject.Help("Word Frequency Report")
 
@@ -1203,6 +1373,27 @@ I'm Ellen Feiss, and I'm a student!"""
         """ Handle the OK / Close button """
         # Close the form
         self.Close()
+
+    def OnSize(self, event):
+        """ Handle form resize """
+        # Call nested Size events
+        event.Skip()
+        # If we are showing the Word Cloud ...
+        if self.notebook.GetSelection() == 1:
+            # ... then signal that the Word Cloud needs to be re-drawn.
+            self.needToDrawWordCloud = True
+
+    def OnIdle(self, event):
+        """ Idle Event Handler """
+        #
+        # NOTE:  Word Clouds need to be drawn in idle time
+        #
+        # If the Word Cloud needs to be re-drawn ...
+        if self.needToDrawWordCloud:
+            # ... turn off the Word Cloud Redraw signal ...
+            self.needToDrawWordCloud = False
+            # ... and re-draw the Word Cloud
+            self.OnNotebookPageChanged(None)
 
     def OnClose(self, event):
         """ Handle Form Closure """

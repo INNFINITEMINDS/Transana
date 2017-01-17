@@ -36,6 +36,8 @@ import TransanaConstants
 import TransanaGlobal
 # import Python's pickle module
 import pickle
+# import word cloud
+import wordcloud
 
 class ConfigData(object):
     """ This module handles Transana Configuration Data, including loading and saving this data. """
@@ -110,7 +112,10 @@ class ConfigData(object):
         str = str + 'quickClipsWarning = %s\n' % self.quickClipWarning
         if 'wxMSW' in wx.PlatformInfo:
             str = str + 'mediaPlayer = %s\n' % self.mediaPlayer
-            str = str + 'mp4MediaPlayer = %s\n\n' % self.mp4MediaPlayer
+            str = str + 'mp4MediaPlayer = %s\n' % self.mp4MediaPlayer
+        str += 'wordCountFrequency = %s\n' % self.wordCountFrequency
+        str += 'wordCountLength = %s\n' % self.wordCountLength
+        str = str + 'wordCloudFont = %s\n\n' % self.wordCloudFont
         return str
 
     def LoadConfiguration(self):
@@ -408,6 +413,9 @@ class ConfigData(object):
         self.reportQuoteNotes = config.ReadInt('/3.0/reportQuoteNotes', 0)
         self.reportClipNotes = config.ReadInt('/3.0/reportClipNotes', 0)
         self.reportSnapshotNotes = config.ReadInt('/3.0/reportSnapshotNotes', 0)
+        self.wordCountFrequency = config.ReadInt('/3.0/wordCountFrequency', 1)
+        self.wordCountLength = config.ReadInt('/3.0/wordCountLength', 1)
+        self.wordCloudFont = config.Read('/3.0/wordCloudFont', wordcloud.wordcloud.FONT_PATH)
 
         # Load the databaseList, if it exists
         # NOTE:  if using Unicode, this MUST be a String object!
@@ -649,6 +657,9 @@ class ConfigData(object):
         config.WriteInt('/3.0/reportQuoteNotes', self.reportQuoteNotes)
         config.WriteInt('/3.0/reportClipNotes', self.reportClipNotes)
         config.WriteInt('/3.0/reportSnapshotNotes', self.reportSnapshotNotes)
+        config.WriteInt('/3.0/wordCountFrequency', self.wordCountFrequency)
+        config.WriteInt('/3.0/wordCountLength', self.wordCountLength)
+        config.Write('/3.0/wordCloudFont', self.wordCloudFont)
 
     def GetDefaultProfilePath(self):
         """ Query the operating system and get the default path for user data. """
