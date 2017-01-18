@@ -1445,7 +1445,7 @@ class KeywordMap(wx.Frame):
             # duplicate entries.  This should prevent it!!
             self.unfilteredKeywordList = []
             # Get the list of CLIP Keywords to be displayed.  This query should do it.
-            SQLText = """SELECT ck.KeywordGroup, ck.Keyword
+            SQLText = """SELECT ck.KeywordGroup, ck.Keyword, cl.ClipStart
                            FROM Clips2 cl, ClipKeywords2 ck
                            WHERE cl.CollectNum = %s AND
                                  cl.ClipNum = ck.ClipNum
@@ -1456,7 +1456,7 @@ class KeywordMap(wx.Frame):
             # Execute the query
             self.DBCursor.execute(SQLText, (self.collectionNum, ))
             # For each record in the query results ...
-            for (kwg, kw) in self.DBCursor.fetchall():
+            for (kwg, kw, clipStart) in self.DBCursor.fetchall():
                 # ... encode the KWG and KW
                 kwg = DBInterface.ProcessDBDataForUTF8Encoding(kwg)
                 kw = DBInterface.ProcessDBDataForUTF8Encoding(kw)
