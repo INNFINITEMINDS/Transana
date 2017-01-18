@@ -5090,7 +5090,7 @@ def ClearAllSynonyms():
     DBCursor.close()
 
 def ClearSourceEpisodeRecords(episodeNum):
-    """ When an Episode is deleted, it must be removed from any Snapshots that claim it. """
+    """ When an Episode is deleted, it must be removed from any Clips and Snapshots that claim it. """
 
     # NOTE:  This routine is not perfect.  If a Snapshot record is locked by another user, the record WILL be changed
     #        here but that change will be wiped out when the user with the record lock saves (thus restoring the
@@ -5099,6 +5099,15 @@ def ClearSourceEpisodeRecords(episodeNum):
     
     # Get a Database cursor
     DBCursor = get_db().cursor()
+
+    # Define a query to delete the appropriate records
+    query = """ UPDATE Clips2
+                  SET EpisodeNum = 0
+                  WHERE EpisodeNum = %s """
+    # Adjust the query for sqlite if needed
+    query = FixQuery(query)
+    # Execute the query
+    DBCursor.execute(query, (episodeNum, ))
 
     # Define a query to delete the appropriate records
     query = """ UPDATE Snapshots2
