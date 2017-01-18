@@ -20,6 +20,8 @@ __author__ = "David K. Woods <dwoods@transana.com>"
 
 # import Python's os and sys modules
 import os, sys
+# import Python's random module
+import random
 # import Python's Regular Expression module
 import re
 
@@ -516,7 +518,16 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         else:
             # ... then we want key2, then key1 values so the Word sort is still alphabetic and ascending
             return(self.itemDataMap[key2][0].lower(), self.itemDataMap[key1][0].lower())
-        
+
+    def WordCloudColorFunction(self, word=None, font_size=None, position=None, orientation=None, font_path=None, random_state=None):
+        """ Define a Color Selection function to use with Word Cloud to allow Transana's Customizable Graphics Colors to be used """
+        # Define color options as Transana's Text Colors, without White at the end of the list
+        transana_ColorList = TransanaGlobal.getColorDefs(TransanaGlobal.configData.colorConfigFilename)[:-1]
+        # Select a color at random        
+        sel = int(random.random() * len(transana_ColorList))
+        # Return the color definition
+        return transana_ColorList[sel][1]
+
     def OnNotebookPageChanged(self, event):
         """ Handle Notebook Page Change Events """
         # Allow the underlying Control to process the Page Change, unless this is called with None
@@ -603,8 +614,13 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             stopWords = set(wordcloud.STOPWORDS)
 
             # Configure the WordCloud graphic
-            wordcloud1 = wordcloud.WordCloud(width = w, height = h, min_font_size = 7, background_color = "white",
-                                             stopwords = stopWords, font_path = TransanaGlobal.configData.wordCloudFont,
+            wordcloud1 = wordcloud.WordCloud(width = w,
+                                             height = h,
+                                             min_font_size = 7,
+                                             background_color = "white",
+                                             color_func = self.WordCloudColorFunction,
+                                             stopwords = stopWords,
+                                             font_path = TransanaGlobal.configData.wordCloudFont,
                                              relative_scaling = 0.25)  # max_words = 500
             # Generate the WordCloud graphic based on frequencies (rather than from plain text)
             wordcloud1.generate_from_frequencies(frequencies)
