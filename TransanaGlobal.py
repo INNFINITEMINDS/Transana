@@ -291,16 +291,20 @@ tmpColorList = (_('Black'), _('Dark Blue'), _('Blue'), _('Light Blue'), _('Cyan'
 # We want enough shades of gray for black and white GRAPHICS printing, but not too many.  This list seems about right to me.
 # Each entry is made up of a color name and a tuple of the RGB values for the color.
 transana_grayList = [('Black',             (  0,   0,   0)),
-                     ('Dark Gray',         ( 79,  79,  79)),
-                     ('Gray',              (158, 158, 158)),
-                     ('Light Gray',        (237, 237, 237)),
+                     ('Gray 1',            ( 96,  96,  96)),
+                     ('Gray 2',            (128, 128, 128)),
+                     ('Gray 3',            (160, 160, 160)),
+                     ('Gray 4',            (190, 190, 190)),
+                     ('Gray 5',            (230, 230, 230)),
                      ('White',             (255, 255, 255))]
 
 # Get the legal shades of gray for bars in the Keyword Map.  These shades are taken from the TransanaGlobal.transana_grayList
 keywordMapGraySet = ['Black',
-                     'Gray',
-                     'Dark Gray',
-                     'Light Gray']
+                     'Gray 1',
+                     'Gray 2',
+                     'Gray 3',
+                     'Gray 4',
+                     'Gray 5']
 # We sometimes need to look a GRAPHICS color up by its name
 transana_grayLookup = {}
 # Iterate through the list of Graphics "Black and White" colors and build a dictionary for looking up color definition based on name
