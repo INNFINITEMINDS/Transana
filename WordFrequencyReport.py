@@ -18,6 +18,8 @@
 
 __author__ = "David K. Woods <dwoods@transana.com>"
 
+SHOW_CORRELATION = False
+
 # import Python's os and sys modules
 import os, sys
 # import Python's random module
@@ -181,7 +183,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         else:
             rect = wx.Display(TransanaGlobal.configData.primaryScreen).GetClientArea()
         # The width and height of the form should be 80% of the full screen
-        width = min(int(rect[2] * .80), 800)
+        width = min(int(rect[2] * .80), 900)
         height = rect[3] * .80
 
         # Build the Report Title
@@ -352,7 +354,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Add a Static Bitmap to hold the Word Cloud
         self.wordCloud = wx.StaticBitmap(self.wordCloudPanel, -1)
         # Add the Word Clound Bitmap to the Panel's Sizer
-        pnl4Sizer.Add(self.wordCloud, 1, wx.EXPAND | wx.ALL, 10)
+        pnl4Sizer.Add(self.wordCloud, 1, wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT, 10)
         # Connect the Sizer to the Panel
         self.wordCloudPanel.SetSizer(pnl4Sizer)
         
@@ -521,6 +523,12 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
     def WordCloudColorFunction(self, word=None, font_size=None, position=None, orientation=None, font_path=None, random_state=None):
         """ Define a Color Selection function to use with Word Cloud to allow Transana's Customizable Graphics Colors to be used """
+
+        if SHOW_CORRELATION:
+            ## print "WordFrequencyReport.WordCloudColorFunction():", word, self.frequencies[word], font_size
+            self.corrdata[0].append(self.frequencies[word])
+            self.corrdata[1].append(font_size)
+        
         # Define color options as Transana's Text Colors, without White at the end of the list
         transana_ColorList = TransanaGlobal.getColorDefs(TransanaGlobal.configData.colorConfigFilename)[:-1]
         # Select a color at random        
@@ -577,7 +585,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             self.printReport.Enable(True)
 
             # Set up a list to hold word frequency information
-            frequencies = []
+            self.frequencies = {}
 
             # Start exception handling
             try:
@@ -599,7 +607,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                 # If the word groups shoud be displayed ...
                 if (data[0] != 'Do Not Show Group') and (data[1] >= minFrequency) and (len(data[0]) >= minLength):
                     # ... add it to the frequencies list
-                    frequencies.append((self.itemDataMap[key][0], self.itemDataMap[key][1]))
+                    self.frequencies[self.itemDataMap[key][0]] = self.itemDataMap[key][1]
 
             # Get the size of the Word Cloud image on the screen
             (w, h) = self.wordCloud.GetSize()
@@ -613,24 +621,52 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             #
             stopWords = set(wordcloud.STOPWORDS)
 
+            if SHOW_CORRELATION:
+                print "WordFrequencyReport.OnNotebookPageChanged():", w, h
+                self.corrdata = [[],[]]
+
             # Configure the WordCloud graphic
             wordcloud1 = wordcloud.WordCloud(width = w,
-                                             height = h,
-                                             min_font_size = 7,
+                                             height = h - 10,
+                                             min_font_size = 8,
+                                             max_font_size = 250,
                                              background_color = "white",
                                              color_func = self.WordCloudColorFunction,
                                              stopwords = stopWords,
                                              font_path = TransanaGlobal.configData.wordCloudFont,
-                                             relative_scaling = 0.25)  # max_words = 500
+                                             max_words = 500,
+                                             relative_scaling = 1)   
             # Generate the WordCloud graphic based on frequencies (rather than from plain text)
-            wordcloud1.generate_from_frequencies(frequencies)
+            wordcloud1.generate_from_frequencies(self.frequencies)
 
             # Convert the WordCloud image (a PIL / Pillow image) to a wx.Image to a wx.Bitmap
             wordcloudImageObj = wordcloud1.to_image()
-            imageObj = wx.EmptyImage(w, h)
+            imageObj = wx.EmptyImage(w, h - 10)
             imageObj.SetData(wordcloudImageObj.convert("RGB").tobytes())
+            imageObj = imageObj.Resize((w, h), (0, 0), 255, 255, 255)
             bitmapObj = wx.BitmapFromImage(imageObj)
 
+            # Add Transana watermark
+            # First, create a Memory DC
+            memoryDC = wx.MemoryDC()
+            # Select the bitmap into the Memory DC
+            memoryDC.SelectObject(bitmapObj)
+            font = wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False)
+            memoryDC.SetFont(font)
+            memoryDC.SetTextForeground(wx.Colour(172, 172, 172))
+            versionLbl = "Powered by Transana"
+            # Determine the size of the watermark text
+            (verWidth, verHeight) = memoryDC.GetTextExtent(versionLbl)
+            # Add the watermark text to the Memory DC (and therefore the bitmap)
+            memoryDC.DrawText(versionLbl, w - verWidth - 1, h - verHeight - 1)
+
+            if SHOW_CORRELATION:
+                import numpy
+                memoryDC.DrawText("r = %8.6f" % numpy.corrcoef(self.corrdata[0], self.corrdata[1])[0, 1], 1, h - verHeight - 1)
+
+            # Clear the bitmap from the Memory DC, thus freeing it to be displayed!
+            memoryDC.SelectObject(wx.EmptyBitmap(10, 10))
+            
             # Place the Bitmap on the screen
             self.wordCloud.SetBitmap(bitmapObj)
             
