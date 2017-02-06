@@ -2818,15 +2818,17 @@ class _DBTreeCtrl(wx.TreeCtrl):
             elif TransanaConstants.proVersion and documentNum > 0:
                 item = mapDict['Document'][documentNum]
                 noteNodeType = 'DocumentNoteNode'
-##            elif quoteNum > 0:
-##                item = mapDict['Quote'][documentNum]
-##                noteNodeType = 'QuoteNoteNode'
-            # Create the tree node
-            noteitem = self.AppendItem(item, noteID)
-            # Add the node's image and node data
-            nodedata = _NodeData(nodetype=noteNodeType, recNum=noteNum)  # Identify this as a Note node
-            self.SetPyData(noteitem, nodedata)                  # Associate this data with the node
-            self.set_image(noteitem, "Note16")
+            else:
+                noteNodeType = 'UNSUPPORTEDNoteNode'
+            # If the Note Node is one of the supported note node types ...
+            # (We can run into problems with data that's been used in Professional being loaded in Basic without this!)
+            if noteNodeType != 'UNSUPPORTEDNoteNode':
+                # Create the tree node
+                noteitem = self.AppendItem(item, noteID)
+                # Add the node's image and node data
+                nodedata = _NodeData(nodetype=noteNodeType, recNum=noteNum)  # Identify this as a Note node
+                self.SetPyData(noteitem, nodedata)                  # Associate this data with the node
+                self.set_image(noteitem, "Note16")
 
     def create_collections_node(self):
         """ Create the Collections node and populate it with all appropriate data """
@@ -2991,7 +2993,6 @@ class _DBTreeCtrl(wx.TreeCtrl):
         # Now add all the Notes to the objects in the Collection node of the database tree
         for (noteNum, noteID, libraryNum, episodeNum, transcriptNum, collectNum, clipNum, snapshotNum, documentNum, quoteNum) in \
             DBInterface.list_of_node_notes(CollectionNode=True):
-            item = None
             # Find the correct Collection or Clip node using the map dictionary
             if collectNum > 0:
                 if mapDict['Collection'].has_key(collectNum):
@@ -3011,19 +3012,17 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     noteNodeType = 'SnapshotNoteNode'
                 else:
                     print "ABANDONED SNAPSHOT NOTE RECORD!", noteNum, noteID.encode('utf8'), snapshotNum
-##            elif (documentNum > 0) and TransanaConstants.proVersion:
-##                if mapDict['Document'].has_key(documentNum):
-##                    item = mapDict['Document'][documentNum]
-##                    noteNodeType = 'DocumentNoteNode'
-##                else:
-##                    print "ABANDONED DOCUMENT NOTE RECORD!", noteNum, noteID.encode('utf8'), documentNum
             elif (quoteNum > 0) and TransanaConstants.proVersion:
                 if mapDict['Quote'].has_key(quoteNum):
                     item = mapDict['Quote'][quoteNum]
                     noteNodeType = 'QuoteNoteNode'
                 else:
                     print "ABANDONED QUOTE NOTE RECORD!", noteNum, noteID.encode('utf8'), quoteNum
-            if item != None:
+            else:
+                noteNodeType = 'UNSUPPORTEDNoteNode'
+            # If the Note Node is one of the supported note node types ...
+            # (We can run into problems with data that's been used in Professional being loaded in Basic without this!)
+            if noteNodeType != 'UNSUPPORTEDNoteNode':
                 # Create the tree node
                 noteitem = self.AppendItem(item, noteID)
                 # Add the node's image and node data
