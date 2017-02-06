@@ -525,8 +525,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         """ Define a Color Selection function to use with Word Cloud to allow Transana's Customizable Graphics Colors to be used """
 
         if SHOW_CORRELATION:
-            ## print "WordFrequencyReport.WordCloudColorFunction():", word, self.frequencies[word], font_size
-            self.corrdata[0].append(self.frequencies[word])
+            print "WordFrequencyReport.WordCloudColorFunction():", word, self.corrFrequencies[word], font_size
+            self.corrdata[0].append(self.corrFrequencies[word])
             self.corrdata[1].append(font_size)
         
         # Define color options as Transana's Text Colors, without White at the end of the list
@@ -585,7 +585,9 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             self.printReport.Enable(True)
 
             # Set up a list to hold word frequency information
-            self.frequencies = {}
+            self.frequencies = []  # {}
+            if SHOW_CORRELATION:
+                self.corrFrequencies = {}
 
             # Start exception handling
             try:
@@ -607,7 +609,10 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                 # If the word groups shoud be displayed ...
                 if (data[0] != 'Do Not Show Group') and (data[1] >= minFrequency) and (len(data[0]) >= minLength):
                     # ... add it to the frequencies list
-                    self.frequencies[self.itemDataMap[key][0]] = self.itemDataMap[key][1]
+                    self.frequencies.append((self.itemDataMap[key][0], self.itemDataMap[key][1]))
+                    ## self.frequencies[self.itemDataMap[key][0]] = self.itemDataMap[key][1]
+                    if SHOW_CORRELATION:
+                        self.corrFrequencies[self.itemDataMap[key][0]] = self.itemDataMap[key][1]
 
             # Get the size of the Word Cloud image on the screen
             (w, h) = self.wordCloud.GetSize()
