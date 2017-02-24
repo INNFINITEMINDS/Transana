@@ -114,6 +114,7 @@ class Transana(wx.App):
             t3 = time.localtime()
             t4 = datetime.datetime(t3[0], t3[1], t3[2], t3[3], t3[4])
             if (t1 > t4) or (t2 < t4):
+                TransanaGlobal.configData = ConfigData.ConfigData()
                 dlg = Dialogs.ErrorDialog(None, "This copy of Transana is no longer valid.")
                 dlg.ShowModal()
                 dlg.Destroy
