@@ -115,7 +115,8 @@ class ConfigData(object):
             str = str + 'mp4MediaPlayer = %s\n' % self.mp4MediaPlayer
         str += 'wordCountFrequency = %s\n' % self.wordCountFrequency
         str += 'wordCountLength = %s\n' % self.wordCountLength
-        str = str + 'wordCloudFont = %s\n\n' % self.wordCloudFont
+        str = str + 'wordCloudFont = %s\n' % self.wordCloudFont
+        str += 'skipWordsFile = %s\n\n' % self.skipWordsFile
         return str
 
     def LoadConfiguration(self):
@@ -416,6 +417,7 @@ class ConfigData(object):
         self.wordCountFrequency = config.ReadInt('/3.0/wordCountFrequency', 1)
         self.wordCountLength = config.ReadInt('/3.0/wordCountLength', 1)
         self.wordCloudFont = config.Read('/3.0/wordCloudFont', wordcloud.wordcloud.FONT_PATH)
+        self.skipWordsFile = config.Read('/3.0/skipWordsFile', os.path.join(self.GetDefaultProfilePath(), 'SkipWords - en.txt'))
 
         # Load the databaseList, if it exists
         # NOTE:  if using Unicode, this MUST be a String object!
@@ -660,6 +662,7 @@ class ConfigData(object):
         config.WriteInt('/3.0/wordCountFrequency', self.wordCountFrequency)
         config.WriteInt('/3.0/wordCountLength', self.wordCountLength)
         config.Write('/3.0/wordCloudFont', self.wordCloudFont)
+        config.Write('/3.0/skipWordsFile', self.skipWordsFile)
 
     def GetDefaultProfilePath(self):
         """ Query the operating system and get the default path for user data. """

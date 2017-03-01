@@ -54,7 +54,7 @@ class SynonymEditor(wx.Dialog):
 
         # Words
         txt2 = wx.StaticText(panel, -1, "Words:", style=wx.ALIGN_RIGHT)
-        self.synonyms = wx.ListBox(panel, -1)
+        self.synonyms = wx.ListBox(panel, -1, style=wx.LB_EXTENDED)
 
         # Delete Button
         self.deleteBtn = wx.Button(panel, -1, _("Delete Selected Word"))
@@ -113,10 +113,14 @@ class SynonymEditor(wx.Dialog):
 
     def OnDelete(self, event):
         """ Handle Delete Button press """
-        # If there is a selection ...
-        if self.synonyms.GetSelection() != wx.NOT_FOUND:
+        # Get a list of the control's selections
+        selections = self.synonyms.GetSelections()
+        # Sort the list in descending order
+        selections = sorted(selections, reverse=True)
+        # For each item, highest to lowest, ...
+        for sel in selections:
             # ... delete the Word from the Control
-            self.synonyms.Delete(self.synonyms.GetSelection())
+            self.synonyms.Delete(sel)
 
     def GetSynonymValues(self):
         """ Return the values left in the control """

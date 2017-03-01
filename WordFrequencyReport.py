@@ -20,6 +20,8 @@ __author__ = "David K. Woods <dwoods@transana.com>"
 
 SHOW_CORRELATION = False
 
+# import Python's codecs module for reading utf-8 files
+import codecs
 # import Python's os and sys modules
 import os, sys
 # import Python's random module
@@ -246,12 +248,6 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         # Add a separator
         self.toolbar.AddSeparator()
 
-##        # Add a Save / Print button
-##        self.printReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.SavePrint.GetBitmap(), size=(24, 24))
-##        self.printReport.SetToolTipString(_("Save / Print"))
-##        self.toolbar.AddControl(self.printReport)
-##        self.printReport.Bind(wx.EVT_BUTTON, self.OnPrintReport)
-##
         # Add a Save button
         self.saveReport = wx.BitmapButton(self.toolbar, -1, TransanaImages.Save16.GetBitmap(), size=(24, 24))
         self.saveReport.SetToolTipString(_("Save"))
@@ -404,7 +400,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.optionsPanel = wx.Panel(self.notebook, -1)
         self.optionsPanel.SetBackgroundColour(wx.WHITE)
         # Create a Sizer for the Options Panel
-        pnl2Sizer = wx.FlexGridSizer(rows=6, cols=4, hgap=20, vgap=20)
+        pnl2Sizer = wx.FlexGridSizer(rows=8, cols=4, hgap=20, vgap=20)
         self.optionsPanel.SetSizer(pnl2Sizer)
 
         # Minimum Word Frequency
@@ -419,8 +415,18 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.btnClearAll = wx.Button(self.optionsPanel, -1, _("Clear all Word Grouping Data"), style=wx.ALIGN_LEFT)
         self.btnClearAll.Bind(wx.EVT_BUTTON, self.OnClearAllWordGroupings)
 
+        # Select Skip List file
+        self.browseSkipWords = wx.Button(self.optionsPanel, -1, _('Browse to the "Skip Words" file (utf8)'))
+        self.browseSkipWords.Bind(wx.EVT_BUTTON, self.OnBrowse)
+        self.skipWordsFile = wx.TextCtrl(self.optionsPanel, -1, TransanaGlobal.configData.skipWordsFile)
+
+        # Hide commonly hidden words
+        self.btnskipWords = wx.Button(self.optionsPanel, -1, _('Hide Words from the "Skip Words" File'), style=wx.ALIGN_LEFT)
+        self.btnskipWords.Bind(wx.EVT_BUTTON, self.OnSetSynonyms)
+
         # Word Cloud Font
-        txt3 = wx.StaticText(self.optionsPanel, -1, _("Word Cloud") + u' ' + _('Font:'), style=wx.ALIGN_RIGHT)
+        self.browseWordCloudFont = wx.Button(self.optionsPanel, -1, _("Browse to Word Cloud Font"))
+        self.browseWordCloudFont.Bind(wx.EVT_BUTTON, self.OnBrowse)
         self.wordCloudFont = wx.TextCtrl(self.optionsPanel, -1, TransanaGlobal.configData.wordCloudFont)
 
         # Use the GridSizer to center our data entry fields both horizontally and vertically
@@ -445,7 +451,17 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
                            ((1, 1), 9, wx.EXPAND),
 
                            ((1, 1), 12, wx.EXPAND),
-                           (txt3, 3, wx.EXPAND | wx.ALIGN_RIGHT),
+                           (self.browseSkipWords, 3, wx.EXPAND | wx.ALIGN_RIGHT),
+                           (self.skipWordsFile, 6, wx.EXPAND),
+                           ((1, 1), 9, wx.EXPAND),
+                           
+                           ((1, 1), 12, wx.EXPAND),
+                           ((1, 1), 3, wx.EXPAND),
+                           (self.btnskipWords, 6),
+                           ((1, 1), 9, wx.EXPAND),
+
+                           ((1, 1), 12, wx.EXPAND),
+                           (self.browseWordCloudFont, 3, wx.EXPAND | wx.ALIGN_RIGHT),
                            (self.wordCloudFont, 6, wx.EXPAND),
                            ((1, 1), 9, wx.EXPAND),
                            
@@ -456,7 +472,7 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
         # Make the top and bottom rows growable to center vertically
         pnl2Sizer.AddGrowableRow(0, 12)
-        pnl2Sizer.AddGrowableRow(5, 14)
+        pnl2Sizer.AddGrowableRow(7, 14)
         # Make the left and right columns growable to center horizontally
         pnl2Sizer.AddGrowableCol(0, 10)
         pnl2Sizer.AddGrowableCol(2, 10)
@@ -546,18 +562,40 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
             if event.GetOldSelection() == 3:
                 # ... we need to re-do the Word Frequencies when the time comes.
                 self.needToPopulateWordFrequencies = True
+                # Update the Minimum Frequency value in the Config file
                 try:
                     TransanaGlobal.configData.wordCountFrequency = int(self.minFrequency.GetValue())
+                # If this fails ...
                 except:
-                    pass
+                    # ... revert silently to the previous value
+                    self.minFrequency.SetValue("%s" % TransanaGlobal.configData.wordCountFrequency)
+                # Update the Word Length value in the Config file
                 try:
                     TransanaGlobal.configData.wordCountLength = int(self.minLength.GetValue())
+                # If this fails ...
                 except:
-                    pass
+                    # ... revert silently to the previous value
+                    self.minLength.SetValue("%s" % TransanaGlobal.configData.wordCountLength)
+                # If the user has changed the Skip Words File ...
+                if self.skipWordsFile.GetValue() != TransanaGlobal.configData.skipWordsFile:
+                    # Check that the Skip Words File exists
+                    if os.path.exists(self.skipWordsFile.GetValue()):
+                        # ... change the Skip List File in the Configuration file ...
+                        TransanaGlobal.configData.skipWordsFile = self.skipWordsFile.GetValue()
+                    # If the file does not exist ...
+                    else:
+                        # ... revert silently to the previous value
+                        self.skipWordsFile.SetValue(TransanaGlobal.configData.skipWordsFile)
                 # If the user has changed the Word Cloud Font ...
                 if self.wordCloudFont.GetValue() != TransanaGlobal.configData.wordCloudFont:
-                    # ... change the font in the Configuration file ...
-                    TransanaGlobal.configData.wordCloudFont = self.wordCloudFont.GetValue()
+                    # Check that the Word Cloud Font exists
+                    if os.path.exists(self.wordCloudFont.GetValue()):
+                        # ... change the font in the Configuration file ...
+                        TransanaGlobal.configData.wordCloudFont = self.wordCloudFont.GetValue()
+                    # If the file does not exist ...
+                    else:
+                        # ... revert silently to the previous value
+                        self.wordCloudFont.SetValue(TransanaGlobal.configData.wordCloudFont)
                 # ... and save the changes
                 TransanaGlobal.configData.SaveConfiguration()
         else:
@@ -780,6 +818,9 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
 
     def OnSynonymExtension(self, event):
         """ Handle Synonym Seeking requests """
+        # Set the Wait cursor
+        self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
+
         # Clear the Synonym Seeking Results display
         self.synonymResults.ClearAll()
         # Add Column Heading
@@ -856,6 +897,8 @@ class WordFrequencyReport(wx.Frame, ListCtrlMixins.ColumnSorterMixin):
         self.synonymExtension.SetValue('')
         # Set the focus to the extension specification control, ready for the next synonym seek.
         self.synonymExtension.SetFocus()
+        # Reset the cursor
+        self.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
 
     def OnDeleteSynonym(self, event):
         """ Event Handler for the Delete Synonym button on the Synonym Patterns Page """
@@ -1463,8 +1506,10 @@ I'm Ellen Feiss, and I'm a student!"""
 
     def OnSetSynonyms(self, event):
         """ Handle the Set Synonym Group buttons """
-        # If called by the "Do Not Show" group buttong ...
-        if event.GetId() == self.addNoShowBtn.GetId():
+        # Set the Wait cursor
+        self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
+        # If called by the "Do Not Show" group button or the "Hide Skip Words" button ...
+        if event.GetId() in [self.addNoShowBtn.GetId(), self.btnskipWords.GetId()]:
             # ... we should use the "Do Not Show Group" synonym group ...
             synonymGroup = 'Do Not Show Group'
         # If we are adding a visible synonym ...
@@ -1488,6 +1533,27 @@ I'm Ellen Feiss, and I'm a student!"""
             # Get the current synonyms as a starting point
             synonymData = self.synonyms[synonymGroup]
 
+        # Initialize the Skip Words list
+        skipWords = []
+        # If we're adding Skip Words to the "Do Not Show" group ...
+        if event.GetId() == self.btnskipWords.GetId():
+            # start exception handling
+            try:
+                # Open the Skip Words file using UTF-8 encoding
+                f = codecs.open(self.skipWordsFile.GetValue(), 'r', 'utf8')
+                # Read the Skip Words file into memory
+                data = f.readlines()
+                # Close the Skip Words file
+                f.close()
+                # Get each word from the Skip Words data ...
+                for word in data:
+                    # ... strip off the line feed and add the word to the Hide Words list 
+                    skipWords.append(word.replace('\r\n', ''))
+            # If an exception is raised ...
+            except:
+                # ... halt the import but continue processing
+                pass
+
         # We may need to remember an OLD name for a synonym group.  Initialize a variable for this.
         oldSynonymGroup = ''
         # Determine the number of items in the Results List
@@ -1496,10 +1562,10 @@ I'm Ellen Feiss, and I'm a student!"""
         for itemId in range(count):
             # Get the Item Data value for the current Results List item
             item = self.resultsList.GetItemData(itemId)
-            
-            # If the item matches the Synonym Group name or is checked ...
+            # If the item matches the Synonym Group name or is checked or is in the Skip Words list ...
             if (self.itemDataMap[item][0] == synonymGroup) or \
-               (self.resultsList.IsChecked(itemId)):
+               (self.resultsList.IsChecked(itemId)) or \
+               (self.itemDataMap[item][0] in skipWords):
 
                 # If the item matches the Synonym Group name AND this group is already known ...
                 if (self.itemDataMap[item][0] == synonymGroup) and \
@@ -1534,17 +1600,6 @@ I'm Ellen Feiss, and I'm a student!"""
             # ... there's nothing to do!
             return
 
-        # Sort the Synonym Data
-        synonymData.sort()
-        # Create a String version of the synonym list for display
-        for synonym in synonymData:
-            if len(synonymString) > 0:
-                synonymString += ' '
-            synonymString += synonym
-
-        # Update the permanent Synonyms data
-        self.synonyms[synonymGroup] = synonymData
-
         # Initialize a flag for the index of an item, assuming the item will not be found
         index = -1
         # Now iterate though the items in the Synonyms List (control)
@@ -1561,6 +1616,27 @@ I'm Ellen Feiss, and I'm a student!"""
             index = self.resultsList.InsertStringItem(sys.maxint, synonymGroup)
         # Set the value to the string representation of the synonyms
         self.resultsList.SetStringItem(index, 2, synonymString)
+
+        # Check SkipWords for words NOT found in the list
+        for word in skipWords:
+            if not word in synonymData:
+                # ... add it to the synonym DATA
+                synonymData.append(word)
+                # Add the item to the synonym lookup dictionary
+                self.synonymLookups[word] = synonymGroup
+                # add the item to the Database
+                DBInterface.AddSynonym(synonymGroup, word) 
+
+        # Sort the Synonym Data
+        synonymData.sort()
+        # Create a String version of the synonym list for display
+        for synonym in synonymData:
+            if len(synonymString) > 0:
+                synonymString += ' '
+            synonymString += synonym
+
+        # Update the permanent Synonyms data
+        self.synonyms[synonymGroup] = synonymData
 
         # Now we need to look for the synonyms that were just defined in the data, consolidating them.
         itemIndex = -1
@@ -1596,11 +1672,11 @@ I'm Ellen Feiss, and I'm a student!"""
         # need to repopulate their list contents.  But we can skip THIS report, as that's already
         # been done above.
         self.ControlObject.SignalWordFrequencyReports(self.reportNumber)
-
         # Remember the current scroll position of the Results List
         scrollPos = self.resultsList.GetScrollPos(wx.VERTICAL)
         # Repopulate the Word Frequencies
         self.PopulateWordFrequencies()
+
         # Reset the Synonym Group name to blank
         self.synonymGroup.SetValue('')
         # Freeze the Results List
@@ -1609,6 +1685,8 @@ I'm Ellen Feiss, and I'm a student!"""
         self.resultsList.ScrollLines(scrollPos)
         # Thaw the Control
         self.resultsList.Thaw()
+        # Reset the cursor
+        self.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
 
     def OnClearAllWordGroupings(self, event):
         prompt = _("Are you SURE you want to delete all Word Groupings?")
@@ -1625,7 +1703,35 @@ I'm Ellen Feiss, and I'm a student!"""
             # Repopulate the Word Frequencies
             self.PopulateWordFrequencies()
         dlg.Destroy()
-        
+
+    def OnBrowse(self, event):
+        """ Handle EVT_BUTTON events for browsing to the Skip Words File and the Word Cloud Font """
+        # If we have the Browse to Skip Words File call ...
+        if event.GetId() == self.browseSkipWords.GetId():
+            # ... set up the File Dialog variables for the Skip Words File
+            prompt = _("Select the Skip Words File (utf-8 encoding)")
+            (dirName, fileName) = os.path.split(self.skipWordsFile.GetValue())
+            fullFileName = self.skipWordsFile.GetValue()
+            wildcard = _("Text Files (*.txt)|*.txt|All Files (*.*)|*.*")
+        # If we have the Browse to Word Cloud Font call ...
+        elif event.GetId() == self.browseWordCloudFont.GetId():
+            # ... set up the File Dialog variables for the Word Cloud Font file
+            prompt = _("Select the font to be used for Word Clouds")
+            (dirName, fileName) = os.path.split(self.wordCloudFont.GetValue())
+            fullFileName = self.wordCloudFont.GetValue()
+            wildcard = _("TrueType Font File (*.ttf)|*.ttf|All Files (*.*)|*.*")
+        # Create the appropriate File Dialog.  The selected file MUST already exist.
+        dlg = wx.FileDialog(self, prompt, dirName, fullFileName, wildcard, wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        # Get a file selection from the user
+        if dlg.ShowModal() == wx.ID_OK:
+            # Assign the resulting file selection to the appropriate field in the form
+            if event.GetId() == self.browseSkipWords.GetId():
+                self.skipWordsFile.SetValue(dlg.GetPath())
+            elif event.GetId() == self.browseWordCloudFont.GetId():
+                self.wordCloudFont.SetValue(dlg.GetPath())
+        # Destroy the File Dialog
+        dlg.Destroy()
+
 
 if __name__ == '__main__':
     class MyApp(wx.App):

@@ -85,6 +85,7 @@ import time                         # import the time module (Python)
 # import Transana's ConfigData module
 import ConfigData
 import pickle                       # import Python's pickle module
+import shutil                       # import Python's file copy utility
 
 DEBUG = False
 if DEBUG:
@@ -135,9 +136,37 @@ class Transana(wx.App):
                 path = os.path.join(TransanaGlobal.configData.GetDefaultProfilePath(), 'Transana_Error.log')
                 # redirect output to the error log
                 self.RedirectStdio(filename=path)
+
+                # If we're not in the Basic version of Transana ...
+                if TransanaConstants.proVersion:
+                    # Make sure the Skip Words files are copied to the Profile Path
+                    if not os.path.exists(TransanaGlobal.configData.skipWordsFile):
+                        # See if the default Skip Words files have been copied
+                        filesToCopy = ['SkipWords - en.txt']
+                        profileDir = TransanaGlobal.configData.GetDefaultProfilePath()
+                        programDir = TransanaGlobal.programDir
+                        for fileNm in filesToCopy:
+                            if not os.path.exists(os.path.join(profileDir, fileNm)):
+                                try:
+                                    shutil.copyfile(os.path.join(programDir, fileNm), os.path.join(profileDir, fileNm))
+                                except:
+                                    errmsg = _('Could not copy SkipWords file "%s"\nfrom "%s"\nto "%s"')
+                                    dlg = Dialogs.ErrorDialog(None, errmsg % (fileNm, programDir, profileDir))
+                                    dlg.ShowModal()
+                                    dlg.Destroy
+                                    TransanaGlobal.configData.skipWordsFile = ''
+                
                 # Put a startup indicator in the Error Log
                 print "Transana started:", time.asctime()
             except:
+
+                if False:
+                    # Display the Exception Message, allow "continue" flag to remain true
+                    prompt = _("Exception %s : %s")
+                    errordlg = Dialogs.ErrorDialog(None, prompt % (sys.exc_info()[0], sys.exc_info()[1]))
+                    errordlg.ShowModal()
+                    errordlg.Destroy()
+
                 errmsg = unicode('Unable to create error log:\n  %s', 'utf8')
                 dlg = Dialogs.ErrorDialog(None, errmsg % (os.path.join(TransanaGlobal.configData.GetDefaultProfilePath(), 'Transana_Error.log'),))
                 dlg.ShowModal()
