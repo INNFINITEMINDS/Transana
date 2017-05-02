@@ -18,11 +18,19 @@
 
 __author__ = 'David Woods <dwoods@transana.com>'
 
+DEBUG = False
+if DEBUG:
+    print "SpreadsheetDataImport DEBUG is ON!!"
+
 # Import wxPython
 import wx
 # Import wxPython's Wizard
 import wx.wizard as wiz
 
+# Import Transana's Collection object
+import Collection
+# Import Transana's DBInterface module
+import DBInterface
 # Import Transana's Dialogs
 import Dialogs
 # Import Transana's Document Object
@@ -31,6 +39,8 @@ import Document
 import KeywordObject
 # Import Transana's Library Object
 import Library
+# Import Transana's Quote object
+import Quote
 # Import Transana's Constants
 import TransanaConstants
 # Import Transana's Exceptions
@@ -234,29 +244,30 @@ class GetRowsOrColumnsPage(WizPage):
 
         # Add a Hozizontal Box Sizer
         boxH = wx.BoxSizer(wx.HORIZONTAL)
+        
         # A Vertical Box Sizer 1 (left)
         boxV1 = wx.BoxSizer(wx.VERTICAL)
         # Add direction prompt
-        prompt1 = wx.StaticText(self, -1, _('Contents of the first Column'))
+        prompt1 = wx.StaticText(self, -1, _('Contents of the first Row'))
         boxV1.Add(prompt1, 0)
-        # Add a multi-line TextCtrl to hold first Column items
+        # Add a multi-line TextCtrl to hold first Row items
         self.txt1 = wx.TextCtrl(self, -1, style=wx.TE_MULTILINE)
         boxV1.Add(self.txt1, 1, wx.EXPAND | wx.ALL, 3)
-        # Add a checkbox for selecting COLUMNS
-        self.chkColumns = wx.CheckBox(self, -1, " " + _("Prompts shown in first Column"), style=wx.CHK_2STATE)
-        boxV1.Add(self.chkColumns, 0)
+        # Add a checkbox for selecting ROWS
+        self.chkRows = wx.CheckBox(self, -1, " " + _("Prompts shown in first Row"), style=wx.CHK_2STATE)
+        boxV1.Add(self.chkRows, 0)
 
         # A Vertical Box Sizer 2 (right)
         boxV2 = wx.BoxSizer(wx.VERTICAL)
         # Add direction prompt
-        prompt2 = wx.StaticText(self, -1, _('Contents of the first Row'))
+        prompt2 = wx.StaticText(self, -1, _('Contents of the first Column'))
         boxV2.Add(prompt2, 0)
-        # Add a multi-line TextCtrl to hold first Row items
+        # Add a multi-line TextCtrl to hold first Column items
         self.txt2 = wx.TextCtrl(self, -1, style=wx.TE_MULTILINE)
         boxV2.Add(self.txt2, 1, wx.EXPAND | wx.ALL, 3)
-        # Add a checkbox for selecting ROWS
-        self.chkRows = wx.CheckBox(self, -1, " " + _("Prompts shown in first Row"), style=wx.CHK_2STATE)
-        boxV2.Add(self.chkRows, 0)
+        # Add a checkbox for selecting COLUMNS
+        self.chkColumns = wx.CheckBox(self, -1, " " + _("Prompts shown in first Column"), style=wx.CHK_2STATE)
+        boxV2.Add(self.chkColumns, 0)
 
         # Add the Vertical Sizers to the Horizontal Sizer
         boxH.Add(boxV1, 1, wx.EXPAND)
@@ -332,13 +343,6 @@ class GetItemsToIncludePage(WizPage):
         # Add a spacer
         self.sizer.Add((1, 5))
 
-        # Add a Radio Box to specify organization by Participant or by Question
-        self.organize = wx.RadioBox(self, -1, label = _('Create Documents to contain data for ...'),
-                                    choices = [_('Participants (allows auto-coding)'), _('Questions (no auto-coding)')])
-        self.sizer.Add(self.organize, 0, wx.EXPAND | wx.ALL, 5)
-        # Bind a handler for Radio Box Selection
-        self.organize.Bind(wx.EVT_RADIOBOX, self.OnOrganizationSelect)
-
     def IsComplete(self):
         """ IsComplete signals whether ANY questions have been selected """
         return len(self.questions.GetSelections()) > 0
@@ -348,21 +352,6 @@ class GetItemsToIncludePage(WizPage):
         # Check Next Button Enabling on each change
         self.nextButton.Enable(self.IsComplete())
 
-    def OnOrganizationSelect(self, event):
-        """ Handler for Organization Radio Box """
-        # If we are organizing by Participant ...
-        if self.organize.GetSelection() == 0:
-            # ... then we should go to Page 4 after this page ...
-            self.SetNext(self.parent.AutoCodePage)
-            # ... and the Next Button should be "Next"
-            self.nextButton.SetLabel(_('Next >'))
-        # If we are organizing by Question ...
-        else:
-            # ... then we should SKIP Page 4 and are done with the Wizard ...
-            self.SetNext(None)
-            # ... and the Next button should be labelled "Finish".
-            self.nextButton.SetLabel(_('Finish'))
-
     
 class GetAutoCodePage(WizPage):
     """ Wizard page to find out which items to auto-code """
@@ -371,8 +360,20 @@ class GetAutoCodePage(WizPage):
         # Inherit from WizPage
         WizPage.__init__(self, parent, title)
 
+        # Add a spacer
+        self.sizer.Add((1,5))
+
+        # Add a checkbox for creating Quotes
+        self.chkCreateQuotes = wx.CheckBox(self, -1, " " + _("Automatically Create Quotes"), style=wx.CHK_2STATE)
+        # Check it by default
+        self.chkCreateQuotes.SetValue(True)
+        self.sizer.Add(self.chkCreateQuotes, 0, wx.ALL, 5)
+
+        # Add a spacer
+        self.sizer.Add((1,5))
+
         # Add the first Instruction Text
-        instructions3 = _("Please select which items to auto-code at the Document level.")
+        instructions3 = _("Please select items for auto-coding.")
         txtInstructions3 = wx.StaticText(self, -1, instructions3)
         self.sizer.Add(txtInstructions3, 0, wx.ALL, 5)
 
@@ -403,7 +404,7 @@ class SpreadsheetDataImport(wiz.Wizard):
         # This list holds the data imported from the file in a list of lists
         self.all_data = []
         # This list holds the Questions / Prompts from the data file
-        self.questions = []
+        self.questionsFromData = []
         # This dictionary holds Keyword Groups (keys) and Keywords (data) for Auto-Codes
         self.all_codes = {}
 
@@ -418,7 +419,7 @@ class SpreadsheetDataImport(wiz.Wizard):
         # Define the individual Wizard Pages
         self.FileNamePage = GetFileNamePage(self, _("Select a Spreadsheet Data File"))
         self.RowsOrColumnsPage = GetRowsOrColumnsPage(self, _("Identify Data Orientation"))
-        self.ItemsToIncludePage = GetItemsToIncludePage(self, _("Organize Data for Import"))
+        self.ItemsToIncludePage = GetItemsToIncludePage(self, _("Select Data for Import"))
         self.AutoCodePage = GetAutoCodePage(self, _("Select Items for Auto-Coding."))
 
         # Define the page order / relationships
@@ -457,7 +458,7 @@ class SpreadsheetDataImport(wiz.Wizard):
         self.RunWizard(self.FileNamePage)
 
     def strip_quotes(self, text):
-        """ Process text items from a Streadsheet Data File to strip leading and trailing quotes """
+        """ Process text items from a Streadsheet Data File to strip leading and trailing quotes and remove double and triple quotes """
         # Remove leading and trailing whitespace
         text = text.strip()
         # Replace triple quotes with single quotes
@@ -482,6 +483,8 @@ class SpreadsheetDataImport(wiz.Wizard):
             if event.GetDirection():
                 # Initialize the File Data list
                 self.all_data = []
+                # Count number of row elements based on header
+                rowElements = 0
                 # Note the filename
                 filename = self.FileNamePage.txtSrcFileName.GetValue()
                 # Get the Character Encoding
@@ -489,22 +492,77 @@ class SpreadsheetDataImport(wiz.Wizard):
                 # Open the file
                 with open(filename, 'r') as f:
                     try:
+
+                        ##########################################################################################
+                        #                                                                                        #
+                        #  NOTE:  The python csv reader has some problems.  For example, the following data:     #
+                        #                                                                                        #
+                        #         There is a "problem", at all times, handling a line with quotes and commas.    #
+                        #                                                                                        #
+                        #         gets parsed as 3 elements instead of one, and may get double-quotes at the     #
+                        #         end of the word "problem"".  My code detects and adjusts for that.             #
+                        #                                                                                        #
+                        ##########################################################################################
+                        
                         # Use the csv Sniffer to determine the dialect of the file
                         dialect = csv.Sniffer().sniff(f.read(1024))
                         # Reset the file to the beginning
                         f.seek(0)
+
+                        # NOTE:  Tab delimited TXT files cause an IndexError here.  I thought the csvreader was supposed to
+                        #        be able to handle tab delimited text.  I guess not.
+                        
                         # use the csv Reader to read the data file
                         csvReader = csv.reader(f, dialect=dialect)
                         # For each row of data read ...
                         for row in csvReader:
                             # ... create a list for the Unicode encoded data
                             encRow = []
+                            # Initialize variables for handling "problem" data.
+                            # These variables allow us to combine data elements and know that we are doing it.
+                            combine = False
+                            combinedElement = ''
                             # For each element in the row  ...
                             for element in row:
-                                # ... decode the data (convert string to unicode) using the import encoding ...
-                                encRow.append(element.decode(encoding))
+                                # Process certain problem characters
+                                # Ampersand
+                                element = element.replace('&', '&amp;')
+                                # Less Than
+                                element = element.replace('<', '&lt;')
+                                # Greater Than
+                                element = element.replace('>', '&gt;')
+                                # A weird unicode version of apostrophe that crept into one of my data files
+                                element = element.replace(chr(146), chr(39))
+
+                                # If we ARE handling weird data, or if we have an element with a Quotation Mark ...
+                                if combine or (element.find('"') > -1):
+                                    # If the LAST character is a quotation mark, that signals the end of the combining data.
+                                    if element[-1] == '"':
+                                        # If this is not a stand-alone (single) line, add the comma that was removed from the text
+                                        if combinedElement != '':
+                                            combinedElement += u", "
+                                        # ... and add the combined elements as a single text element, dropping the end quotation mark
+                                        encRow.append(combinedElement + element[:-1])
+                                        # Reset the variables indicating that we are combining elements, as we're done.
+                                        combinedElement = ''
+                                        combine = False
+                                    # If this is NOT a Final Character Quote situation ...
+                                    else:
+                                        # If this is not a stand-alone (single) line, add the comma that was removed from the text
+                                        if combinedElement != '':
+                                            combinedElement += u", "
+                                        # Add the new element text to the combined element string
+                                        combinedElement += element
+                                        # Signal that we're in the middle of combining elements
+                                        combine = True
+                                # If we're NOT handling weird data and we don't have quotation marks in our text ...
+                                else:
+                                    # ... just add the element to the data structure
+                                    encRow.append(element)
+
                             # ... add that encoded row to the data list
                             self.all_data.append(encRow)
+
                     except UnicodeDecodeError:
                         prompt = _("Unicode Error.  The encoding you selected does not match the data file you selected.")
                         tmpDlg = Dialogs.ErrorDialog(self, prompt)
@@ -512,19 +570,79 @@ class SpreadsheetDataImport(wiz.Wizard):
                         tmpDlg.Destroy()
                         event.Veto()
                         return
+                    
+                    # If we get a CSV error, an IndexError, or a TypeError, let's try to do the import the hard way.
+                    # (This is most often because we have a Tab Delimited Text file which CSV apparently can't handle!)
                     except (csv.Error, IndexError, TypeError):
+
+                        if DEBUG:
+                            print "SpreadsheetDataImport EXCEPTION:", sys.exc_info()[0], sys.exc_info()[1]
+
+                        # Reset the data list.  We're starting over.                        
                         self.all_data = []
+                        # Count number of row elements based on header
+                        rowElements = 0
+                        # Begin exception handling
                         try:
+                            # Seek the start of the file
                             f.seek(0)
+                            # Read the file's data
                             data = f.read()
+                            # Decode the data based on the user-supplied file encoding
                             data = data.decode(encoding)
+                            # If the last character of data is a newline character ...
                             if data[-1] == '\n':
+                                # ... drop that newline character from data
                                 data = data[:-1]
+                            # Divide the data up into Rows.
                             rows = data.split('\n')
-                            for x in rows:
+                            
+                            # The problem with this method is that if a single answer contains a '\n' character within it,
+                            # the whole data structue gets thrown off.  There are not enough tabs (columns) per row.
+                            # We need to correct for this.
+
+                            # Let's start by figuring out how many elements there should be, by looking at the first line.
+                            # This could be problematic if data is organized in rows per participant and the first (0th)
+                            # participant has this problem.
+                            rowElements = rows[0].count('\t')
+                            # Let's count the number of rows we're working with.
+                            numRows = len(rows)
+                            # We need to read the data structure from the bottom up because we are altering it as we go!
+                            for x in range(numRows - 2, 0, -1):
+                                # If our current row has more elements than the first row, we have a problem.
+                                if rows[x].count('\t') > rowElements:
+
+                                    # For now, just raise an exception.  Eventually, we may wish to add an error message or
+                                    # even correct the problem!!
+                                    raise(TransanaExceptions.NotImplementedError)
+
+                                # If our current row has fewer elements than the first row ...
+                                elif rows[x].count('\t') < rowElements:
+                                    # ... add the current row to the previous row ...
+                                    rows[x-1] += rows[x]
+                                    # ... and remove the current row from the rows data structure
+                                    rows = rows[:x] + rows[x+1:]
+                            # The number of rows may have changed!
+                            numRows = len(rows)
+                            # for each row ...
+                            for row in rows:
+                                # ... initialize a list for row elements
                                 row_data = []
-                                for y in x.split('\t'):
-                                    row_data.append(self.strip_quotes(y))
+                                # Break data row up at tabs
+                                for element in row.split('\t'):
+                                    # Process certain problem characters
+                                    # Ampersand
+                                    element = element.replace('&', '&amp;')
+                                    # Less Than
+                                    element = element.replace('<', '&lt;')
+                                    # Greater Than
+                                    element = element.replace('>', '&gt;')
+                                    # A weird unicode version of apostrophe that crept into one of my data files
+                                    element = element.replace(u'\u2019', unichr(39))
+
+                                    # ... append it to the row data list
+                                    row_data.append(element)
+                                # Now append the row data to the full data structure.
                                 self.all_data.append(row_data)
                         except UnicodeDecodeError:
                             prompt = _("Unicode Error.  The encoding you selected does not match the data file you selected.")
@@ -538,14 +656,17 @@ class SpreadsheetDataImport(wiz.Wizard):
                         print sys.exc_info()[0]
                         print sys.exc_info()[1]
 
-                # Place the first item in each row (that is, the first COLUMN of data) in the Column TextCtrl
-                self.RowsOrColumnsPage.txt1.Clear()
-                for row in self.all_data:
-                    self.RowsOrColumnsPage.txt1.AppendText(self.strip_quotes(row[0]) + '\n')
-                self.RowsOrColumnsPage.txt2.Clear()
+                        # Pass the exception on up the hierarchy
+                        raise()
+
                 # Place the items from the first row (that is,the first ROW of data) in the Row TextCtrl
+                self.RowsOrColumnsPage.txt1.Clear()
                 for col in self.all_data[0]:
-                    self.RowsOrColumnsPage.txt2.AppendText(self.strip_quotes(col) + '\n')
+                    self.RowsOrColumnsPage.txt1.AppendText(self.strip_quotes(col) + u'\n')
+                # Place the first item in each row (that is, the first COLUMN of data) in the Column TextCtrl
+                self.RowsOrColumnsPage.txt2.Clear()
+                for row in self.all_data:
+                    self.RowsOrColumnsPage.txt2.AppendText(self.strip_quotes(row[0]) + u'\n')
                 # Disable the Column and Row TextCtrls
                 self.RowsOrColumnsPage.txt1.Enable(False)
                 self.RowsOrColumnsPage.txt2.Enable(False)
@@ -554,38 +675,46 @@ class SpreadsheetDataImport(wiz.Wizard):
             # If we're moving FORWARD ...
             if event.GetDirection():
                 # Initialize the Questions list
-                self.questions = []
+                self.questionsFromData = []
                 # Determine the Questions if the user selected Columns ...
                 if self.RowsOrColumnsPage.chkColumns.GetValue():
                     # ... by iterating through each row of data ...
                     for row in self.all_data:
                         # ... and selecting the row's first item
-                        self.questions.append(self.strip_quotes(row[0]))
+                        self.questionsFromData.append(self.strip_quotes(row[0]))
                 # Determine the Questions if the user selected Rows ...
                 else:
                     # ... by iterating through the first row of data
                     for col in self.all_data[0]:
                         # ... and selecting the column's header
-                        self.questions.append(self.strip_quotes(col))
+                        self.questionsFromData.append(self.strip_quotes(col))
 
                 # Populate the combo of Questions / Prompts used to select the Unique Identifier after adding an automatic creation option
-                self.ItemsToIncludePage.identifier.SetItems([_('Create one automatically')] + self.questions)
+                self.ItemsToIncludePage.identifier.SetItems([_('Create one automatically')] + self.questionsFromData)
                 self.ItemsToIncludePage.identifier.SetSelection(0)
                 # Populate the list of Questions / Prompts
-                self.ItemsToIncludePage.questions.SetItems(self.questions)
+                self.ItemsToIncludePage.questions.SetItems(self.questionsFromData)
+                # Select all items.  Select from the bottom up, including the first item.  (Stop at -1 to include item 0!)  This
+                # means the list will be scrolled to the TOP.  
+                for x in range(len(self.questionsFromData) - 1, -1, -1):
+                    self.ItemsToIncludePage.questions.Select(x)
+                # Scroll to the top
+                # self.ItemsToIncludePage.questions.EnsureVisible(0)   # DOESN'T WORK
+                # self.ItemsToIncludePage.questions.SetScrollPos(0, 0) # DOESN'T WORK
+
         # If we move to the Auto-Code Page ...
         elif event.GetPage() == self.ItemsToIncludePage:
             # If we're moving FORWARD ...
             if event.GetDirection():
                 # ... set the Auto-Code options to match the Questions
-                self.AutoCodePage.autocode.SetItems(self.questions)
+                self.AutoCodePage.autocode.SetItems(self.questionsFromData)
 
     def OnPageChanged(self, event):
         """ Process Wizard Page changes with no veto option """
         # If we move BACKWARDS to the File Name Page ...
         if event.GetPage() == self.FileNamePage:
             # Reset the Questions and Codes
-            self.questions = []
+            self.questionsFromData = []
             self.all_codes = {}
 
         # Identify the Next button
@@ -593,13 +722,52 @@ class SpreadsheetDataImport(wiz.Wizard):
         # Enable (or not) the Next Button depending the new page's "completeness"
         nextButton.Enable(event.GetPage().IsComplete())
 
+    def PosAdjust(self, text):
+        """ We need a way to adjust Quote Position information for the HTMLification of special characters. """
+        # Initialize to no adjustment at all.
+        adjustment = 0
+        # Define character strings to look for and amount to adjust for each
+        characters = (('&amp;', 4), ('&gt;', 3), ('&lt;', 3))
+
+        # NOTE:  We can't just use string.replace() because we need to know how many adjustments we made.
+        # For each character string / adjustment pair ...
+        for (character, adjAmt) in characters:
+            # Find the first instance of the character string
+            startPos = text.find(character)
+            # If we find (another) one ...
+            while startPos > -1:
+                # ... increase the adjustment value by the indicated amount ...
+                adjustment += adjAmt
+                # ... and search for the next one, starting after the one we just found
+                startPos = text.find(character, startPos + adjAmt)
+        # Return the adjustment value
+        return adjustment
+
     def OnWizardFinished(self, event):
         """ Process the data when the Wizard is completed """
-
+        # Determine if we're supposed to create Quotes or not
+        createQuote = self.AutoCodePage.chkCreateQuotes.GetValue()
         # The Wizard is triggered on one of the Tree's Library nodes.  Get the Record Number for this node.
         libraryNumber = self.treeCtrl.GetPyData(self.treeCtrl.GetSelections()[0]).recNum
         # Get the full Library record
         library = Library.Library(libraryNumber)
+        # If we're creating Quotes ...
+        if createQuote:
+            # ... start exception handling 
+            try:
+                # Try to open the Collection that shares its name with the Library.
+                collection1 = Collection.Collection(library.id, 0)
+            # If a RecordNotFoundError is raised, the Collection doesn't exist ...
+            except TransanaExceptions.RecordNotFoundError:
+                # ... so we need to create it.
+                collection1 = Collection.Collection()
+                collection1.id = library.id
+                collection1.parent = 0
+                collection1.comment = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
+                collection1.keyword_group = unicode(_('Auto-code'), 'utf8')
+                collection1.db_save()
+            # Signal that collections need to be added to the Database Tree
+            collectionsDisplayed = False
 
         # Get the Unique Identifier selected by the user
         id_col = self.ItemsToIncludePage.identifier.GetSelection() - 1
@@ -611,448 +779,414 @@ class SpreadsheetDataImport(wiz.Wizard):
         encoding = self.FileNamePage.txtSrcEncoding.GetStringSelection()
 
         # We need to move through the data differently if the source file is organized by Columns or by Rows.
-        # We need to present data differently if we're organizing output data by Participant or by Question.
-        # It might be possible to do this more efficiently, but I don't have time to abstract that right now.
-        # As a result, there's a lot of duplication in the following code.
 
-        # If source data Questions / Prompts are in the first Column ...
+        # ... initialize the auto-codes found for THIS participant
+        codes = {}
+        # Initialize the dictionary for Collections based on Questions
+        collections = {}
+
+        # If data is in Columns ...
         if self.RowsOrColumnsPage.chkColumns.GetValue():
-            # ... and if we're organizing output by Participant ...
-            if self.ItemsToIncludePage.organize.GetSelection() == 0:
-                # ... initialize the auto-codes found for THIS participant
-                codes = {}
+            # ... then the number of participants is the number of elements per row
+            numParticipants = len(self.all_data[0])
 
-                # For each COLUMN ...
-                for x in range(1, len(self.all_data[0])):
+            if DEBUG:
+                print
+                print "Prompts in Columns", ' Participants:', len(self.all_data[0]) - 1, '  Questions:', len(self.all_data) - 1
 
-                    # If the user requested automatic unique Participant IDs ...
-                    if (id_col == -1) or (self.all_data[id_col][x] == ''):
-                        # ... create a unique Participant ID and increment the Participant Counter
-                        participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
-                        participantCount += 1
-                    # Otherwise, use the data the user requested
-                    else:
-                        participantID = self.all_data[id_col][x]  # self.strip_quotes(self.all_data[id_col][x].decode(encoding))
-
-                    # Create Document by participantID
-                    tmpDoc = Document.Document()
-                    # Populate essential Document Properties
-                    tmpDoc.id = participantID
-                    tmpDoc.library_num = libraryNumber
-                    tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
-                    tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text with the initial XML for a Transana-XML document
-                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
-<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
-"""
-                    tmpDoc.plaintext = ''
-
-                    # For each Question that should be included in the output ...
-                    for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
-                        # ... extract the question and answer ...
-                        question = self.strip_quotes(self.questions[q])
-                        answer = self.strip_quotes(self.all_data[q][x])
-
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        # Start with a Paragraph declaration, left indent after first line 3", tab at 3"
-                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
-      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
-                        # Add the actual DATA
-                        tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
-                        # Close the Paragraph declaration
-                        tmpDoc.text += """</text>
-    </paragraph>
-"""
-                        tmpDoc.plaintext += question + '\t' + answer + '\n'
-
-                    # Complete the Transana-XML documeht specification
-                    tmpDoc.text += """  </paragraphlayout>
-</richtext>
-"""
-
-                    # Remove trailing carriage return
-                    tmpDoc.plaintext = tmpDoc.plaintext[:-1]
-
-                    # For each selected Auto-Code category ...
-                    for c in self.AutoCodePage.autocode.GetSelections():
-                        # Define the Keyword Group
-                        kwg = unicode(_('Auto-code'), 'utf8')
-                        # Define the Keyword
-                        kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[c][x]))
-                        # Replace Parentheses (illegal in Keywords) with Brackets
-                        kw = kw.replace('(', '[')
-                        kw = kw.replace(')', ']')
-                        
-                        # If there was no missing data in the Keyword Definition ...
-                        if (self.strip_quotes(self.questions[c]) != '') and (self.strip_quotes(self.all_data[c][x]) != ''):
-                            # ... Add the Keyword to the Document
-                            tmpDoc.add_keyword(kwg, kw)
-                            # If the Keyword Group had not been defined ...
-                            if not kwg in self.all_codes.keys():
-                                # ... define the Keyword Group using a list containing the Keyword
-                                self.all_codes[kwg] = [kw]
-                                # Try to load the keyword to see if it already exists.
-                                try:
-                                    keyword = KeywordObject.Keyword(kwg, kw)
-                                # If the Keyword doesn't exist yet ...
-                                except TransanaExceptions.RecordNotFoundError:
-                                    # ... create the Keyword.
-                                    keyword = KeywordObject.Keyword()
-                                    keyword.keywordGroup = kwg
-                                    keyword.keyword = kw
-                                    keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
-                                    # Try to save the Keyword
-                                    keyword.db_save()
-                                    # Add the new Keyword to the database tree
-                                    self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
-
-                                    # Now let's communicate with other Transana instances if we're in Multi-user mode
-                                    if not TransanaConstants.singleUserVersion:
-                                        if TransanaGlobal.chatWindow != None:
-                                            TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
-                            # If the Keyword Group HAS been defined ...
-                            else:
-                                # ... if the Keyword has NOT been defined ...
-                                if not kw in self.all_codes[kwg]:
-                                    # ... add the Keyword to the Keyword Group's Keyword List
-                                    self.all_codes[kwg].append(kw)
-                                    # Try to load the keyword to see if it already exists.
-                                    try:
-                                        keyword = KeywordObject.Keyword(kwg, kw)
-                                    # If the Keyword doesn't exist yet ...
-                                    except TransanaExceptions.RecordNotFoundError:
-                                        # ... create the Keyword.
-                                        keyword = KeywordObject.Keyword()
-                                        keyword.keywordGroup = kwg
-                                        keyword.keyword = kw
-                                        keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
-                                        # Try to save the Keyword
-                                        keyword.db_save()
-                                        # Add the new Keyword to the database tree
-                                        self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
-
-                                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                                        if not TransanaConstants.singleUserVersion:
-                                            if TransanaGlobal.chatWindow != None:
-                                                TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
-
-                    # Try to save the new Document
-                    try:
-                        tmpDoc.db_save()
-                    # If there is a SaveError (duplicate name is most likely) ...
-                    except TransanaExceptions.SaveError:
-                        # ... try to give it a unique identifier
-                        tmpDoc.id += ' (%04d)' % participantCount
-                        participantCount += 1
-                        # Try to save it again
-                        tmpDoc.db_save()
-                    finally:
-                        # Add the new Document to the Database Tree
-                        nodeData = (_('Libraries'), library.id, tmpDoc.id)
-                        self.treeCtrl.add_Node('DocumentNode', nodeData, tmpDoc.number, library.number)
-
-                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                        if not TransanaConstants.singleUserVersion:
-                            if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AD %s >|< %s" % (nodeData[-2], nodeData[-1]))
-
-            # ... and if we're organizing output by Question ...
-            elif self.ItemsToIncludePage.organize.GetSelection() == 1:
-                # For each Question that should be included in the output ...
-                for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
-                    # Note the Question
-                    questionID = self.strip_quotes(self.all_data[q][0])
-
-                    # Create Document by QuestionID
-                    tmpDoc = Document.Document()
-                    # Populate essential Document Properties
-                    tmpDoc.id = questionID
-                    tmpDoc.library_num = libraryNumber
-                    tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
-                    tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text with the initial XML for a Transana-XML document
-                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
-<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
-"""
-                    tmpDoc.plaintext = ''
-
-                    # We have to re-initialize the Participant Counter for each Question
-                    participantCount = 1
-                    
-                    # For each COLUMN ...
-                    for x in range(1, len(self.all_data[0])):
-
-                        # If the user requested automatic unique Participant IDs ...
-                        if (id_col == -1) or (self.strip_quotes(self.all_data[id_col][x]) == ''):
-                            # ... create a unique Participant ID and increment the Participant Counter
-                            participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
-                            participantCount += 1
-                        # Otherwise, use the data the user requested
-                        else:
-                            participantID = self.strip_quotes(self.all_data[id_col][x])
-
-                        # ... extract the question and answer ...
-                        answer = self.strip_quotes(self.all_data[q][x])
-
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
-      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
-                        # Add the actual DATA
-                        tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
-                        # Close the Paragraph declaration
-                        tmpDoc.text += """</text>
-    </paragraph>
-"""
-                        tmpDoc.plaintext += participantID + '\t' + answer + '\n'
-
-                    # Complete the Transana-XML document specification
-                    tmpDoc.text += """  </paragraphlayout>
-</richtext>
-"""
-                    # Remove trailing carriage returns
-                    tmpDoc.plaintext = tmpDoc.plaintext[:-2]
-
-                    # Try to save the new Document
-                    try:
-                        tmpDoc.db_save()
-                    # If there is a SaveError (duplicate name is most likely) ...
-                    except TransanaExceptions.SaveError:
-                        # ... try to give it a unique identifier
-                        tmpDoc.id += ' (%04d)' % participantCount
-                        participantCount += 1
-                        # Try to save it again
-                        tmpDoc.db_save()
-                    finally:
-                        # Add the new Document to the Database Tree
-                        nodeData = (_('Libraries'), library.id, tmpDoc.id)
-                        self.treeCtrl.add_Node('DocumentNode', nodeData, tmpDoc.number, library.number)
-
-                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                        if not TransanaConstants.singleUserVersion:
-                            if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AD %s >|< %s" % (nodeData[-2], nodeData[-1]))
-
-        # If source data Questions / Prompts are organized in Rows ...
+        # If data is in Rows ...
         elif self.RowsOrColumnsPage.chkRows.GetValue():
-            # ... and if we're organizing output by Participant ...
-            if self.ItemsToIncludePage.organize.GetSelection() == 0:
-                # ... initialize the auto-codes found for THIS participant
-                codes = {}
-                
-                # For each ROW ...
-                for x in range(1, len(self.all_data)):
-                    # If the user requested automatic unique Participant IDs ...
-                    if (id_col == -1) or (self.strip_quotes(self.all_data[x][id_col]) == ''):
-                        # ... create a unique Participant ID and increment the Participant Counter
-                        participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
-                        participantCount += 1
-                    # Otherwise, use the data the user requested
-                    else:
-                        participantID = self.strip_quotes(self.all_data[x][id_col])
-                        
-                    # Create Document by participantID
-                    tmpDoc = Document.Document()
-                    # Populate essential Document Properties
-                    tmpDoc.id = participantID
-                    tmpDoc.library_num = libraryNumber
-                    tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
-                    tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text with the initial XML for a Transana-XML document
-                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
+            # ... then the number of participants is the number of rows in the data
+            numParticipants = len(self.all_data)
+
+            if DEBUG:
+                print "Prompts in Rows", ' Participants:', len(self.all_data), '  Questions:', len(self.all_data[0])
+
+        # Note the number of questions in this spreadsheet file
+        numQuestions = len(self.ItemsToIncludePage.questions.GetSelections())
+        # Create a Progress Dialog to display progress through the questions for each participant
+        progressDlg = DualProgressBar(self, _('Spreadsheet Data Import'), _('Participants'), _('Questions'), numParticipants, numQuestions)
+
+        # For each ROW ...
+        for x in range(1, numParticipants):
+            # If a "Participant Identifier" column has been selected ...
+            if id_col != -1:
+                # If data is in Columns ...
+                if self.RowsOrColumnsPage.chkColumns.GetValue():
+                    # ... then note the selected participant identifier
+                    partID = self.all_data[id_col][x]
+                # If data is in Rows ...
+                elif self.RowsOrColumnsPage.chkRows.GetValue():
+                    # ... then note the selected participant identifier
+                    partID = self.all_data[x][id_col]
+            # If the user requested automatic unique Participant IDs ...
+            if (id_col == -1) or (self.strip_quotes(partID) == ''):
+                # ... create a unique Participant ID and increment the Participant Counter
+                participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
+                participantCount += 1
+            # Otherwise, use the data the user requested
+            else:
+                participantID = self.strip_quotes(partID)
+
+            if DEBUG:
+                print "Participant %d of %d" % (participantCount - 1, numParticipants - 1)
+
+            # Update the first (participants) progress indicator
+            progressDlg.Update(1, x)
+
+            # Initialize Quote Position, Question Number, and list to hold new Quotes prior to saving
+            quotePos = 0
+            questionNum = 0
+            quoteList = []
+
+            # Create Document by participantID
+            tmpDoc = Document.Document()
+            # Populate essential Document Properties
+            tmpDoc.id = participantID
+            tmpDoc.library_num = libraryNumber
+            tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
+            tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
+            # Initialize Document Text with the initial XML for a Transana-XML document
+            tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
 <richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
+<paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10">
 """
-                    tmpDoc.plaintext = ''
+            tmpDoc.plaintext = ''
 
-                    # For each Question that should be included in the output ...
-                    for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        # ... extract the question and answer ...
-                        question = self.strip_quotes(self.questions[q])
-                        answer = self.strip_quotes(self.all_data[x][q])
+            # For each Question that should be included in the output ...
+            for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
+                # ... populate the Document Text and Plain Text with Question and Response
+                # ... extract the question and answer ...
+                question = self.strip_quotes(self.questionsFromData[q])
+                # If data is in Columns ...
+                if self.RowsOrColumnsPage.chkColumns.GetValue():
+                    # ... then select the correct cell for the question's response
+                    answer = self.strip_quotes(self.all_data[q][x])
+                # If data is in Rows ...
+                elif self.RowsOrColumnsPage.chkRows.GetValue():
+                    # ... then select the correct cell for the question's response
+                    answer = self.strip_quotes(self.all_data[x][q])
+                # Increment Question Number (Numbering questions each time)
+                questionNum += 1
 
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
-      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
-                        # Add the actual DATA
-                        tmpDoc.text += question.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
+                if DEBUG:
+                    print '  ', participantID, 'of', numParticipants, " Q%05d" % questionNum, 'of', numQuestions
+                    print '    ', type(question), question.encode('utf8')
+                    print '    ', type(answer), answer.encode('utf8')
+
+                # ... populate the Document Text and Plain Text with Question and Response
+                # Start with a Paragraph declaration
+                tmpDoc.text += """    <paragraph leftindent="0" rightindent="0" parspacingafter="51">
+<text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                # Add the Question
+                tmpDoc.text += question.encode('utf8') # + '\n'
+                # Close the Paragraph declaration
+                tmpDoc.text += """</text>
+</paragraph>
+"""
+                # Add the Question ot the Plain Text
+                tmpDoc.plaintext += question + u'\n'
+
+                # An answer *might* contain multiple paragraphs separated by newlines.  If so, each
+                # one needs its own paragraph specification.
+                answers = answer.split('\n')
+                # For each paragraph in an individual answer ...
+                for answerPart in answers:
+                    # ... make sure we don't just have an empty paragraph in the middle of several
+                    if (answerPart.strip() != '') or (len(answers) == 1):
+                        # Start with a Paragraph declaration, left indent of 1"
+                        tmpDoc.text += """    <paragraph leftindent="254" rightindent="254" parspacingafter="51">
+<text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                        # Add the Answer
+                        tmpDoc.text += answerPart.encode('utf8') # + '\n'
                         # Close the Paragraph declaration
                         tmpDoc.text += """</text>
-    </paragraph>
+</paragraph>
 """
-                        tmpDoc.plaintext += question + '\t' + answer + '\n'
+                        # Add the answer paragraph to the Plain Text
+                        tmpDoc.plaintext += answerPart + u'\n'
+
+                # If we are creating Quotes ...
+                if createQuote:
+                    # If we already have a Collection for this Question in our list of Collections ...
+                    if questionNum in collections.keys():
+                        # ... use the existing Collection
+                        collection2 = collections[questionNum]
+                    # If we don't already have the Collection in our list of Collections ...
+                    else:
+                        # ... create a Collection ID based on Question Number and some question text ...
+                        collectionID = unicode("Q%04d - %s", 'utf8') % (questionNum, question[:50].strip())
+                        # Start exception handling
+                        try:
+                            # ... try to open the Collection
+                            collection2 = Collection.Collection(collectionID, collection1.number)
+                        # If the Collection does not yet exist, Transana will raise a RecordNotFoundError 
+                        except TransanaExceptions.RecordNotFoundError:
+                            # ... indicating that we need to create the Collectoin.
+                            collection2 = Collection.Collection()
+                            collection2.id = collectionID
+                            collection2.parent = collection1.number
+                            collection2.comment = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
+                            collection2.keyword_group = unicode(_('Auto-code'), 'utf8')
+                            collection2.db_save()
+                        # Once the collection has been loaded or created ...
+                        finally:
+                            # ... add it to the List of Collections
+                            collections[questionNum] = collection2
+
+                    # Determine the correct value for the sort order for THIS collection
+                    sortOrder = DBInterface.getMaxSortOrder(collection2.number) + 1
+
+                    # Create a new Quote
+                    quote1 = Quote.Quote()
+                    # Create a Quote ID from the Participant ID and the Question Number
+                    quote1.id = participantID + unicode("  Q%04d" % questionNum, 'utf8')
+                    # Populate the Quote's Collection Number and Collection ID
+                    quote1.collection_num = collection2.number
+                    quote1.collection_id = collection2.id
+                    # Add the Sort Order
+                    quote1.sort_order = sortOrder
+                    # Add the Quote Starting Point, which we shoudl be tracking across *Document* creation.
+                    quote1.start_char = quotePos
+                    # Add the length of the Question and the answer and the two newline characters to the cumulative Quote Position ...
+                    quotePos += len(question) + len(answer) + 2
+                    # ... but then adjust these values for special characters such as &, <, and >.
+                    quotePos -= self.PosAdjust(question)
+                    quotePos -= self.PosAdjust(answer)
+
+                    # We can use the Clip Transcripts as Quote Text too!
+                    quote1.text = """<?xml version="1.0" encoding="UTF-8"?>
+<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
+<paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="0" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10">
+"""
+                    quote1.text += """    <paragraph leftindent="0" rightindent="0" parspacingafter="51">
+  <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                    # Add the Question
+                    quote1.text += question.encode('utf8') # + '\n'
+                    # Close the Paragraph declaration
+                    quote1.text += """</text>
+</paragraph>
+"""
+                    # Add the Question ot the Plain Text
+                    quote1.plaintext = question + u'\n'
+
+                    # An answer *might* contain multiple paragraphs separated by newlines.  If so, each
+                    # one needs its own paragraph specification.
+                    for answerPart in answers:
+                        # ... make sure we don't just have an empty paragraph in the middle of several
+                        if (answerPart.strip() != '') or (len(answers) == 1):
+                            # Start with a Paragraph declaration, left indent of 1"
+                            quote1.text += """    <paragraph leftindent="254" rightindent="254" parspacingafter="51">
+<text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
+                            # Add the Answer
+                            quote1.text += answerPart.encode('utf8') # + '\n'
+                            # Close the Paragraph declaration
+                            quote1.text += """</text>
+</paragraph>
+"""
+                            # Add the answer paragraph to the Plain Text
+                            quote1.plaintext += answerPart + u'\n'
 
                     # Complete the Transana-XML documeht specification
-                    tmpDoc.text += """  </paragraphlayout>
+                    quote1.text += """  </paragraphlayout>
+</richtext>
+"""
+                    # We've adjusted the Quote Position variable.  We use that (-1) for the Quote End Position character
+                    quote1.end_char = quotePos - 1
+                    # Add a comment noting how this Quote was created.
+                    quote1.comment = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
+                    # Add the quote to the Quote List.  Quotes will be completed and saved later.
+                    quoteList.append(quote1)
+
+            # Complete the Transana-XML document specification
+            tmpDoc.text += """  </paragraphlayout>
 </richtext>
 """
 
-                    # Remove trailing carriage returns
-                    tmpDoc.plaintext = tmpDoc.plaintext[:-2]
+            # Remove trailing carriage return
+            tmpDoc.plaintext = tmpDoc.plaintext[:-1]
 
-                    # For each selected Auto-Code category ...
-                    for c in self.AutoCodePage.autocode.GetSelections():
-                        # Define the Keyword Group
-                        kwg = unicode(_('Auto-code'), 'utf8')
-                        # Define the Keyword
-                        kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questions[c]), self.strip_quotes(self.all_data[x][c]))
-                        # Replace Parentheses (illegal in Keywords) with Brackets
-                        kw = kw.replace('(', '[')
-                        kw = kw.replace(')', ']')
+            # For each selected Auto-Code category ...
+            for c in self.AutoCodePage.autocode.GetSelections():
+                # Define the Keyword Group
+                kwg = unicode(_('Auto-code'), 'utf8')
+                # Define the Keyword
+                # If data is in Columns ...
+                if self.RowsOrColumnsPage.chkColumns.GetValue():
+                    # ... then the keyword is here
+                    kwData = self.all_data[c][x]
+                # If data is in Rows ...
+                elif self.RowsOrColumnsPage.chkRows.GetValue():
+                    # ... then the keyword is here
+                    kwData = self.all_data[x][c]
+                kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questionsFromData[c]), self.strip_quotes(kwData))
+                # Replace Parentheses (illegal in Keywords) with Brackets
+                kw = kw.replace('(', '[')
+                kw = kw.replace(')', ']')
+                # Adjust for length
+                kwg = kwg[:45]
+                kw = kw[:80]
+
+                if DEBUG:
+                    print '      ', kwg, kw
+                
+                # If there was no missing data in the Keyword Definition ...
+                if (self.strip_quotes(self.questionsFromData[c]) != '') and (self.strip_quotes(kwData) != ''):
+                    # ... Add the Keyword to the Document
+                    tmpDoc.add_keyword(kwg, kw)
+                    # If we're creating Quotes ...
+                    if createQuote:
+                        # ... iterate through the quotes in the Quote List ...
+                        for quote in quoteList:
+                            # ... and add the keyword to the Quote
+                            quote.add_keyword(kwg, kw)
                         
-                        # If there was no missing data in the Keyword Definition ...
-                        if (self.strip_quotes(self.questions[c]) != '') and (self.strip_quotes(self.all_data[x][c]) != ''):
-                            # ... Add the Keyword to the Document
-                            tmpDoc.add_keyword(kwg, kw)
-                            # If the Keyword Group had not been defined ...
-                            if not kwg in self.all_codes.keys():
-                                # ... define the Keyword Group using a list containing the Keyword
-                                self.all_codes[kwg] = [kw]
-                                # Try to load the keyword to see if it already exists.
-                                try:
-                                    keyword = KeywordObject.Keyword(kwg, kw)
-                                # If the Keyword doesn't exist yet ...
-                                except TransanaExceptions.RecordNotFoundError:
-                                    # ... create the Keyword.
-                                    keyword = KeywordObject.Keyword()
-                                    keyword.keywordGroup = kwg
-                                    keyword.keyword = kw
-                                    keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
-                                    # Try to save the keyword
-                                    keyword.db_save()
-                                    # Add the new Keyword to the database tree
-                                    self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
+                    # If the Keyword Group had not been defined ...
+                    if not kwg in self.all_codes.keys():
+                        # ... define the Keyword Group using a list containing the Keyword
+                        self.all_codes[kwg] = [kw]
+                        # Try to load the keyword to see if it already exists.
+                        try:
+                            keyword = KeywordObject.Keyword(kwg, kw)
+                        # If the Keyword doesn't exist yet ...
+                        except TransanaExceptions.RecordNotFoundError:
+                            # ... create the Keyword.
+                            keyword = KeywordObject.Keyword()
+                            keyword.keywordGroup = kwg
+                            keyword.keyword = kw
+                            keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
+                            # Try to save the keyword
+                            keyword.db_save()
+                            # Add the new Keyword to the database tree
+                            self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
 
-                                    # Now let's communicate with other Transana instances if we're in Multi-user mode
-                                    if not TransanaConstants.singleUserVersion:
-                                        if TransanaGlobal.chatWindow != None:
-                                            TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
-                            # If the Keyword Group HAS been defined ...
-                            else:
-                                # ... if the Keyword has NOT been defined ...
-                                if not kw in self.all_codes[kwg]:
-                                    # ... add the Keyword to the Keyword Group's Keyword List
-                                    self.all_codes[kwg].append(kw)
-                                    # Try to load the keyword to see if it already exists.
-                                    try:
-                                        keyword = KeywordObject.Keyword(kwg, kw)
-                                    # If the Keyword doesn't exist yet ...
-                                    except TransanaExceptions.RecordNotFoundError:
-                                        # ... create the Keyword.
-                                        keyword = KeywordObject.Keyword()
-                                        keyword.keywordGroup = kwg
-                                        keyword.keyword = kw
-                                        keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
-                                        # Try to save the Keyword
-                                        keyword.db_save()
-                                        # Add the new Keyword to the database tree
-                                        self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
+                            # Now let's communicate with other Transana instances if we're in Multi-user mode
+                            if not TransanaConstants.singleUserVersion:
+                                if TransanaGlobal.chatWindow != None:
+                                    TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
+                    # If the Keyword Group HAS been defined ...
+                    else:
+                        # ... if the Keyword has NOT been defined ...
+                        if not kw in self.all_codes[kwg]:
+                            # ... add the Keyword to the Keyword Group's Keyword List
+                            self.all_codes[kwg].append(kw)
+                            # Try to load the keyword to see if it already exists.
+                            try:
+                                keyword = KeywordObject.Keyword(kwg, kw)
+                            # If the Keyword doesn't exist yet ...
+                            except TransanaExceptions.RecordNotFoundError:
+                                # ... create the Keyword.
+                                keyword = KeywordObject.Keyword()
+                                keyword.keywordGroup = kwg
+                                keyword.keyword = kw
+                                keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
+                                # Try to save the Keyword
+                                keyword.db_save()
+                                # Add the new Keyword to the database tree
+                                self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
 
-                                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                                        if not TransanaConstants.singleUserVersion:
-                                            if TransanaGlobal.chatWindow != None:
-                                                TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
+                                # Now let's communicate with other Transana instances if we're in Multi-user mode
+                                if not TransanaConstants.singleUserVersion:
+                                    if TransanaGlobal.chatWindow != None:
+                                        TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
 
-                    # Try to save the new Document
-                    try:
-                        tmpDoc.db_save()
-                    # If there is a SaveError (duplicate name is most likely) ...
-                    except TransanaExceptions.SaveError:
-                        # ... try to give it a unique identifier
-                        tmpDoc.id += ' (%04d)' % participantCount
-                        participantCount += 1
-                        # Try to save it again
-                        tmpDoc.db_save()
-                    finally:
-                        # Add the new Document to the Database Tree
-                        nodeData = (_('Libraries'), library.id, tmpDoc.id)
-                        self.treeCtrl.add_Node('DocumentNode', nodeData, tmpDoc.number, library.number)
+            # Prepare for a SaveError, just in case.  (The "finally" clause makes this necessary.)
+            saveError = False
+            # Try to save the new Document
+            try:
+                tmpDoc.db_save()
+            # If there is a SaveError (duplicate name is most likely) ...
+            except TransanaExceptions.SaveError:
+                # Report the error to the user
+                prompt = unicode(_('Problem saving Document %s.  Try using an empty Collection.'), 'utf8')
+                errorDlg = Dialogs.ErrorDialog(self, prompt % participantID)
+                errorDlg.ShowModal()
+                errorDlg.Destroy()
+                # Note that we have a SaveError
+                saveError = True
+            
+            finally:
+                # If we had a SaveError ...
+                if saveError:
+                    # ... exit this module
+                    return
+                
+                # Add the new Document to the Database Tree
+                nodeData = (_('Libraries'), library.id, tmpDoc.id)
+                self.treeCtrl.add_Node('DocumentNode', nodeData, tmpDoc.number, library.number)
 
-                        # Now let's communicate with other Transana instances if we're in Multi-user mode
-                        if not TransanaConstants.singleUserVersion:
-                            if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AD %s >|< %s" % (nodeData[-2], nodeData[-1]))
+                # Now let's communicate with other Transana instances if we're in Multi-user mode
+                if not TransanaConstants.singleUserVersion:
+                    if TransanaGlobal.chatWindow != None:
+                        TransanaGlobal.chatWindow.SendMessage("AD %s >|< %s" % (nodeData[-2], nodeData[-1]))
 
-            # ... and if we're organizing output by Question ...
-            elif self.ItemsToIncludePage.organize.GetSelection() == 1:
-                # For each Question that should be included in the output ...
-                for q in sorted(self.ItemsToIncludePage.questions.GetSelections()):
-                    # Note the Question
-                    questionID = self.strip_quotes(self.all_data[0][q])
-
-                    # Create Document by QuestionID
-                    tmpDoc = Document.Document()
-                    # Populate essential Document Properties
-                    tmpDoc.id = questionID
-                    tmpDoc.library_num = libraryNumber
-                    tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
-                    tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                    # Initialize Document Text with the initial XML for a Transana-XML document
-                    tmpDoc.text = """<?xml version="1.0" encoding="UTF-8"?>
-<richtext version="1.0.0.0" xmlns="http://www.wxwidgets.org">
-  <paragraphlayout textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New" alignment="1" leftindent="0" leftsubindent="762" rightindent="0" parspacingafter="10" parspacingbefore="0" linespacing="10" tabs="762">
-"""
-                    tmpDoc.plaintext = ''
-                    # We have to re-initialize the Participant Counter with each Question
-                    participantCount = 1
-
-                    # For each ROW ...
-                    for x in range(1, len(self.all_data)):
-
-                        # If the user requested automatic unique Participant IDs ...
-                        if (id_col == -1) or (self.strip_quotes(self.all_data[x][id_col]) == ''):
-                            # ... create a unique Participant ID and increment the Participant Counter
-                            participantID = unicode(_('Participant %04d'), 'utf8') % participantCount
-                            participantCount += 1
-                        # Otherwise, use the data the user requested
-                        else:
-                            participantID = self.strip_quotes(self.all_data[x][id_col])
-
-                        # ... extract the question and answer ...
-                        answer = self.strip_quotes(self.all_data[x][q])
-
-                        # ... populate the Document Text and Plain Text with Question and Response
-                        # Start with a Paragraph declaration
-                        tmpDoc.text += """    <paragraph leftsubindent="762" tabs="762">
-      <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
-                        # Add the actual DATA
-                        tmpDoc.text += participantID.encode('utf8') + '\t' + answer.encode('utf8') + '\n'
-                        # Close the Paragraph declaration
-                        tmpDoc.text += """</text>
-    </paragraph>
-"""
-                        tmpDoc.plaintext += participantID + '\t' + answer + '\n'
-
-                    # Complete the Transana-XML document specification
-                    tmpDoc.text += """  </paragraphlayout>
-</richtext>
-"""
-                    # Remove trailing carriage returns
-                    tmpDoc.plaintext = tmpDoc.plaintext[:-2]
-
-                    # Try to save the new Document
-                    try:
-                        tmpDoc.db_save()
-                    # If there is a SaveError (duplicate name is most likely) ...
-                    except TransanaExceptions.SaveError:
-                        # ... try to give it a unique identifier
-                        tmpDoc.id += ' (%04d)' % participantCount
-                        participantCount += 1
-                        # Try to save it again
-                        tmpDoc.db_save()
-                    finally:
-                        # Add the new Document to the Database Tree
-                        nodeData = (_('Libraries'), library.id, tmpDoc.id)
-                        self.treeCtrl.add_Node('DocumentNode', nodeData, tmpDoc.number, library.number)
+                # If we're creating Quotes ...
+                if createQuote:
+                    # ... and the Collections have not already been displayed ...
+                    if not collectionsDisplayed:
+                        # Get all items for the Collection and add them to the tree using add_Node!
+                        # Add the new Collection to the Database Tree
+                        nodeData = (_('Collections'), collection1.id)
+                        self.treeCtrl.add_Node('CollectionNode', nodeData, collection1.number, 0)
 
                         # Now let's communicate with other Transana instances if we're in Multi-user mode
                         if not TransanaConstants.singleUserVersion:
                             if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AD %s >|< %s" % (nodeData[-2], nodeData[-1]))
+                                TransanaGlobal.chatWindow.SendMessage("AC %s >|< %s" % (nodeData[-2], nodeData[-1]))
+
+                        # For each Question Collection in the List of Collections ...
+                        for collectionKey in collections.keys():
+                            # ... get the Collection record ...
+                            collection = collections[collectionKey]
+                            # ... and add the new Collection to the Database Tree
+                            nodeData = (_('Collections'), collection1.id, collection.id)
+                            self.treeCtrl.add_Node('CollectionNode', nodeData, collection2.number, collection2.parent)
+
+                            # Now let's communicate with other Transana instances if we're in Multi-user mode
+                            if not TransanaConstants.singleUserVersion:
+                                if TransanaGlobal.chatWindow != None:
+                                    TransanaGlobal.chatWindow.SendMessage("AC %s >|< %s" % (nodeData[-2], nodeData[-1]))
+
+                        # We have not added the collections.  We don't need to do that again.
+                        collectionsDisplayed = True
+
+                    # Initialize a Quote Counter (for Progress Notification only)
+                    quoteNum = 0
+                    # For each Quote in the Quote List ...
+                    for quote in quoteList:
+                        # ... increment the Quote Counter
+                        quoteNum += 1
+
+                        if DEBUG:
+                            print "  Quote %d of %d" % (quoteNum, numQuestions)
+                        # Update the second (questions) progress indicator
+                        progressDlg.Update(2, quoteNum)
+
+                        # Add the Source Document Number to the Quote, now that the Document Number is known
+                        quote.source_document_num = tmpDoc.number
+                        # Start exception handling
+                        try:
+                            # Save the Quote
+                            quote.db_save()
+                        except TransanaExceptions.SaveError:
+                            prompt = unicode(_('Problem saving Question %s for %s.'), 'utf8')
+                            errorDlg = Dialogs.ErrorDialog(self, prompt % (quoteNum, participantID))
+                            errorDlg.ShowModal()
+                            errorDlg.Destroy()
+
+                            return
+
+                        # Add the new Quote to the Database Tree
+                        nodeData = (_('Collections'),) + collection1.GetNodeData() + (quote.collection_id, quote.id, )
+                        self.treeCtrl.add_Node('QuoteNode', nodeData, quote.number, quote.collection_num, sortOrder=quote.sort_order, avoidRecursiveYields=True)
+
+                        # Now let's communicate with other Transana instances if we're in Multi-user mode
+                        if not TransanaConstants.singleUserVersion:
+                            if TransanaGlobal.chatWindow != None:
+                                TransanaGlobal.chatWindow.SendMessage("AQ %s >|< %s" % (collection1.GetNodeData() + (quote.collection_id,), quote.id))
+
+                if DEBUG:
+                    print
 
         # If there are auto-codes ...
         if len(self.all_codes) > 0:
@@ -1062,6 +1196,8 @@ class SpreadsheetDataImport(wiz.Wizard):
             # Now let's sort the Keywords Auto-Code Node
             keywordsNode = self.treeCtrl.select_Node((_('Keywords'), _('Auto-code')), 'KeywordGroupNode')
             self.treeCtrl.SortChildren(keywordsNode)
+        # Destroy the Progress Dialog box
+        progressDlg.Destroy()
 
     def OnHelp(self, evt):
         """ Method to use when the Help Button is pressed """
@@ -1069,3 +1205,50 @@ class SpreadsheetDataImport(wiz.Wizard):
         if TransanaGlobal.menuWindow != None:
             # ... call it's Help() method for THIS control.
             TransanaGlobal.menuWindow.ControlObject.Help('Import Spreadsheet Data Files')
+
+class DualProgressBar(wx.Dialog):
+    """ A Dialog with dual Progress Bars """
+    def __init__(self, parent, title, prompt1, prompt2, numItems1, numItems2):
+        """ A Progress Dialog with two progress bars """
+
+        # Create a Dialog Box
+        wx.Dialog.__init__(self, parent, -1, title, size=(600, 150))
+        # Add the Main Sizer
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        # Add a gauge based on the number of records to be handled
+        txtPrompt1 = wx.StaticText(self, -1, prompt1)
+        mainSizer.Add(txtPrompt1, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+        self.gauge1 = wx.Gauge(self, -1, numItems1)
+        mainSizer.Add(self.gauge1, 0, wx.EXPAND | wx.ALL, 5)
+        # Add a second gauge based on the second number of records to be handled
+        txtPrompt2 = wx.StaticText(self, -1, prompt2)
+        mainSizer.Add(txtPrompt2, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+        self.gauge2 = wx.Gauge(self, -1, numItems2)
+        mainSizer.Add(self.gauge2, 0, wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 5)
+
+        # Finalize the Dialog layout
+        self.SetSizer(mainSizer)
+        self.SetAutoLayout(True)
+        self.Layout()
+        # Center the Dialog on the Screen
+        TransanaGlobal.CenterOnPrimary(self)
+        # Initialize the gauges
+        self.gauge1.SetValue(0)
+        self.gauge2.SetValue(0)
+        # Show the Dialog
+        self.Show()
+
+    def Update(self, gauge, value):
+        """ Update gauge Number "gauge" to "value" """
+        # If we are updating the first gauge ...
+        if gauge == 1:
+            # .. then update the first gauge
+            self.gauge1.SetValue(value)
+            # ... and automatically reset the second gauge
+            self.gauge2.SetValue(0)
+        # Otherwise ...
+        else:
+            # ... updage the second gauge
+            self.gauge2.SetValue(value)
+
+        
