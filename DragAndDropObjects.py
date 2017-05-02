@@ -2966,15 +2966,26 @@ def ProcessPasteDrop(treeCtrl, sourceData, destNode, action, confirmations=True)
 
     # Drop a Keyword on a Keyword Group (Copy or Move a Keyword)
     elif (sourceData.nodetype == 'KeywordNode' and destNodeData.nodetype == 'KeywordGroupNode'):
-        # Get user confirmation of the Keyword Copy request
-        if 'unicode' in wx.PlatformInfo:
-            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-            prompt = unicode(_('Do you want to %s Keyword "%s" from\nKeyword Group "%s" to\nKeyword Group "%s"?'), 'utf8') % (copyMovePrompt, sourceData.text, sourceData.parent, treeCtrl.GetItemText(destNode))
+        # If "Yes to All" has not already been selected ...
+        if not YESTOALL:
+            # Get user confirmation of the Keyword Copy request
+            if 'unicode' in wx.PlatformInfo:
+                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                prompt = unicode(_('Do you want to %s Keyword "%s" from\nKeyword Group "%s" to\nKeyword Group "%s"?'), 'utf8') % (copyMovePrompt, sourceData.text, sourceData.parent, treeCtrl.GetItemText(destNode))
+            else:
+                prompt = _('Do you want to %s Keyword "%s" from\nKeyword Group "%s" to\nKeyword Group "%s"?') % (copyMovePrompt, sourceData.text, sourceData.parent, treeCtrl.GetItemText(destNode))
+            dlg = Dialogs.QuestionDialog(treeCtrl, prompt, yesToAll=True)
+            result = dlg.LocalShowModal()
+            # If the user selected Yes To All, we need to process that before destroying the Dialog
+            if result == dlg.YESTOALLID:
+                # Set the global YesToAll to True
+                YESTOALL = True
+                # Yes to All is a Yes.
+                result = wx.ID_YES
+            dlg.Destroy()
         else:
-            prompt = _('Do you want to %s Keyword "%s" from\nKeyword Group "%s" to\nKeyword Group "%s"?') % (copyMovePrompt, sourceData.text, sourceData.parent, treeCtrl.GetItemText(destNode))
-        dlg = Dialogs.QuestionDialog(treeCtrl, prompt)
-        result = dlg.LocalShowModal()
-        dlg.Destroy()
+            result = wx.ID_YES
+        
         if result == wx.ID_YES:
             # Determine if we're copying or moving data
             if action == 'Copy':
