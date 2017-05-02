@@ -2239,6 +2239,9 @@ def get_db(dbToOpen=None, usePrompt=True):
 
                         TransanaGlobal.configData.database = databaseName
 
+                        # Deal with SQL_MODE=ONLY_FULL_GROUP_BY
+                        dbCursor.execute("set session sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'")
+
                 # MySQLdb and PyMySQL handle exceptions differently.  This code tries to handle exceptions correctly for
                 # either connection tool        
 
