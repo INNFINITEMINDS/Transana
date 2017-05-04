@@ -1132,7 +1132,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                         # Now let's communicate with other Transana instances if we're in Multi-user mode
                         if not TransanaConstants.singleUserVersion:
                             if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AC %s >|< %s" % (nodeData[-2], nodeData[-1]))
+                                TransanaGlobal.chatWindow.SendMessage("AC %s" % collection1.id)
 
                         # For each Question Collection in the List of Collections ...
                         for collectionKey in collections.keys():
@@ -1183,7 +1183,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                         # Now let's communicate with other Transana instances if we're in Multi-user mode
                         if not TransanaConstants.singleUserVersion:
                             if TransanaGlobal.chatWindow != None:
-                                TransanaGlobal.chatWindow.SendMessage("AQ %s >|< %s" % (collection1.GetNodeData() + (quote.collection_id,), quote.id))
+                                TransanaGlobal.chatWindow.SendMessage("AQ %s >|< %s >|< %s" % (collection1.id, quote.collection_id, quote.id))
 
                 if DEBUG:
                     print
