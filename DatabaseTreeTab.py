@@ -5219,6 +5219,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # For each Library in the selected items ...
                 for item in selItems:
                     # ... grab the individual item ...
@@ -5228,15 +5230,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
                     # Load the Selected Library
                     library = Library.Library(selData.recNum)
-                    # Get user confirmation of the Library Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Library "%s" and all related Documents, Episodes, Transcripts and Notes?'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        # Get user confirmation of the Library Delete request
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Library "%s" and all related Documents, Episodes, Transcripts and Notes?'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Library "%s" and all related Documents, Episodes, Transcripts and Notes?')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Library "%s" and all related Documents, Episodes, Transcripts and Notes?')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
 #                        # if current object is an Episode ...
@@ -5554,6 +5568,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
             # If we are to continue ...
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # For each Document in the selected items ...
                 for item in selItems:
                     # ... grab the individual item ...
@@ -5564,14 +5580,26 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Load the Selected Document
                     document = Document.Document(selData.recNum)
                     # Get user confirmation of the Document Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Document "%s" and all related Notes?'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Document "%s" and all related Notes?'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Document "%s" and all related Notes?')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Document "%s" and all related Notes?')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
                         try:
@@ -5899,6 +5927,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # For each Episode in the selected items ...
                 for item in selItems:
                     # ... grab the individual item ...
@@ -5908,15 +5938,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
                     # Load the Selected Episode
                     episode = Episode.Episode(selData.recNum)
-                    # Get user confirmation of the Episode Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Episode "%s" and all related Transcripts and Notes?\n(Please note that the video file associated with this Episode will not be deleted.)'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        # Get user confirmation of the Episode Delete request
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Episode "%s" and all related Transcripts and Notes?\n(Please note that the video file associated with this Episode will not be deleted.)'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Episode "%s" and all related Transcripts and Notes?\n(Please note that the video file associated with this Episode will not be deleted.)')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Episode "%s" and all related Transcripts and Notes?\n(Please note that the video file associated with this Episode will not be deleted.)')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
                         # Bring the Media File to the Front
@@ -6111,6 +6153,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # Bring the Transcript to the front
                 self.parent.ControlObject.BringTranscriptToFront()
                 # For each Transcript in the selected items ...
@@ -6130,15 +6174,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         # Clear the interface before proceeding.  (in delete_node is too late!!)
                         self.parent.ControlObject.ClearAllWindows()
 
-                    # Get user confirmation of the Transcript Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Transcript "%s" and all related Notes?'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        # Get user confirmation of the Transcript Delete request
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Transcript "%s" and all related Notes?'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Transcript "%s" and all related Notes?')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Transcript "%s" and all related Notes?')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
                         try:
@@ -6673,6 +6729,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # For each Collection in the selected items ...
                 for item in selItems:
                     # ... grab the individual item ...
@@ -6682,15 +6740,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
                     # Load the Selected Collection
                     collection = Collection.Collection(selData.recNum)
-                    # Get user confirmation of the Collection Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Collection "%s" and all related Nested Collections, Quotes, Clips and Notes?'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        # Get user confirmation of the Collection Delete request
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Collection "%s" and all related Nested Collections, Quotes, Clips and Notes?'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Collection "%s" and all related Nested Collections, Quotes, Clips and Notes?')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Collection "%s" and all related Nested Collections, Quotes, Clips and Notes?')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
                         # if current object is a Clip ...
@@ -7367,115 +7437,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                self.YesToAll = False
                 # For each Quote in the selected items ...
                 for item in selItems:
-                    self.DeleteQuoteClipSnapshotItem(item)
-                    
-##                    # ... grab the individual item ...
-##                    sel = item
-##                    # ... and get the item's data
-##                    selData = self.GetPyData(sel)
-##
-##                    if self.GetPyData(item).nodetype == 'QuoteNode':
-##                        # Load the Selected Quote.  We DO NOT need the Quote Text here
-##                        tmpObj = Quote.Quote(num=selData.recNum, skipText=True)
-##                        # Get the Object Parent number (so it will persist after the Object is deleted)
-##                        tmpObjParentNum = tmpObj.source_document_num
-##                        tmpObjType = Quote.Quote
-##                        tmpObjTypeText = 'Quote'
-##                        # Get user confirmation of the Quote Delete request
-##                        prompt = unicode(_('Are you sure you want to delete Quote "%s" and all related Notes?'), 'utf8')
-##                        delPrompt = unicode(_('You cannot delete Quote "%s".\n%s'), 'utf8')
-##                    elif self.GetPyData(item).nodetype == 'ClipNode':
-##                        # Load the Selected Clip.  We DO NOT need the Clip Text here
-##                        tmpObj = Clip.Clip(selData.recNum, skipText=True)
-##                        # Get the Object Parent number (so it will persist after the Object is deleted)
-##                        tmpObjParentNum = tmpObj.episode_num
-##                        tmpObjType = Clip.Clip
-##                        tmpObjTypeText = 'Clip'
-##                        # Get user confirmation of the Clip Delete request
-##                        prompt = unicode(_('Are you sure you want to delete Clip "%s" and all related Notes?'), 'utf8')
-##                        delPrompt = unicode(_('You cannot delete Clip "%s".\n%s'), 'utf8')
-##                    elif self.GetPyData(item).nodetype == 'SnapshotNode':
-##                        # Load the Selected Snapshot.
-##                        tmpObj = Snapshot.Snapshot(selData.recNum)
-##                        # There is no Parent Object number
-##                        tmpObjParentNum = 0
-##                        tmpObjType = Snapshot.Snapshot
-##                        tmpObjTypeText = 'Snapshot'
-##                        # Get user confirmation of the Snapshot Delete request
-##                        prompt = unicode(_('Are you sure you want to delete Snapshot "%s" and all related Notes?'), 'utf8')
-##                        delPrompt = unicode(_('You cannot delete Snapshot "%s".\n%s'), 'utf8')
-##                            
-##                    dlg = Dialogs.QuestionDialog(self, prompt % self.GetItemText(sel))
-##                    result = dlg.LocalShowModal()
-##                    dlg.Destroy()
-##
-##                    # If the user confirms the Delete Request...
-##                    if result == wx.ID_YES:
-##                        # If THIS Object is currently loaded, we need to remove it from the TranscriptWindow
-##                        self.parent.ControlObject.CloseOpenTranscriptWindowObject(tmpObjType, tmpObj.number)
-##                        # Start exception handling
-##                        try:
-##                            # Get the Object number (so it will persist after the Object is deleted)
-##                            tmpObjNum = tmpObj.number
-##                            # Try to delete the Object, initiating a Transaction
-##                            delResult = tmpObj.db_delete(1)
-##                            # If successful, remove the Object Node from the Database Tree
-##                            if delResult:
-##                                if isinstance(tmpObj, Quote.Quote):
-##                                    # Remove the Object's Position Data from the Source Document, if it's open
-##                                    self.parent.ControlObject.RemoveQuoteFromOpenDocument(tmpObjNum, tmpObjParentNum)
-##                                # Get a temporary Selection Pointer
-##                                tempSel = sel
-##                                # Get the full Node Branch by climbing it to one level above the root
-##                                nodeList = (self.GetItemText(tempSel),)
-##                                while (self.GetItemParent(tempSel) != self.GetRootItem()):
-##                                    tempSel = self.GetItemParent(tempSel)
-##                                    nodeList = (self.GetItemText(tempSel),) + nodeList
-##
-##                                # Call the DB Tree's delete_Node method.
-##                                self.delete_Node(nodeList, self.GetPyData(item).nodetype)
-##                                # ... and if the Notes Browser is open, ...
-##                                if self.parent.ControlObject.NotesBrowserWindow != None:
-##                                    # ... we need to CHECK to see if any notes were deleted.
-##                                    self.parent.ControlObject.NotesBrowserWindow.UpdateTreeCtrl('C')
-##                                    
-##                                # If the current main object is a Document and it's the Document that contains the
-##                                # deleted Object, we need to update the Document Keyword Visualization!
-##                                if (isinstance(self.parent.ControlObject.currentObj, Document.Document)) and \
-##                                   (sourceDocNum == self.parent.ControlObject.currentObj.number):
-##                                    self.parent.ControlObject.UpdateKeywordVisualization()
-##                                # Even if this computer doesn't need to update the keyword visualization others, might need to.
-##                                if not TransanaConstants.singleUserVersion:
-##                                    # We need to pass the type of the current object, the deleted Object's record number, and
-##                                    # the deleted Object's Parent number.
-##                                    if DEBUG:
-##                                        print 'Message to send = "UKV %s %s %s"' % (tmpObjTypeText, tmpObjNum, tmpObjParentNum)
-##                                        
-##                                    if TransanaGlobal.chatWindow != None:
-##                                        TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % (tmpObjTypeText, tmpObjNum, tmpObjParentNum))
-##
-##                        # Handle the RecordLocked exception, which arises when records are locked!
-##                        except RecordLockedError, e:
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            errordlg = Dialogs.ErrorDialog(None, delPrompt % (tmpObj.id, e.explanation))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
-##                        # Handle other exceptions
-##                        except:
-##                            if DEBUG:
-##                                import traceback
-##                                traceback.print_exc(file=sys.stdout)
-##
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            prompt = "%s : %s"
-##                            if 'unicode' in wx.PlatformInfo:
-##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                                prompt = unicode(prompt, 'utf8')
-##                            errordlg = Dialogs.ErrorDialog(None, prompt % (sys.exc_info()[0],sys.exc_info()[1]))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
+                    self.DeleteQuoteClipSnapshotItem(item)                    
 
         elif n == 11:  # Locate Quote in Document
             self.parent.ControlObject.LocateQuoteInDocument(selData.recNum)
@@ -8095,111 +8061,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                self.YesToAll = False
                 # For each Clip in the selected items ...
                 for item in selItems:
                     self.DeleteQuoteClipSnapshotItem(item)
                     
-##                    # ... grab the individual item ...
-##                    sel = item
-##                    # ... and get the item's data
-##                    selData = self.GetPyData(sel)
-##
-##                    # Load the Selected Clip.  We DO need the Clip Transcript(s) here
-##                    clip = Clip.Clip(selData.recNum)
-##                    # Remember the Clip Number, to use after the clip has been deleted
-##                    clipNum = clip.number
-##                    # Remember the original clip's Episode Number for use later, after the clip has been deleted
-##                    clipEpisodeNum = clip.episode_num
-##                    # Get user confirmation of the Clip Delete request
-##                    if 'unicode' in wx.PlatformInfo:
-##                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                        prompt = unicode(_('Are you sure you want to delete Clip "%s" and all related Notes?'), 'utf8')
-##                    else:
-##                        prompt = _('Are you sure you want to delete Clip "%s" and all related Notes?')
-##                    dlg = Dialogs.QuestionDialog(self, prompt % self.GetItemText(sel))
-##                    result = dlg.LocalShowModal()
-##                    dlg.Destroy()
-##
-##                    # If the user confirms the Delete Request...
-##                    if result == wx.ID_YES:
-###                        # If THIS Clip is loaded ...
-###                        if isinstance(self.parent.ControlObject.currentObj, Clip.Clip) and (self.parent.ControlObject.currentObj.number == clip.number):
-###                            # ... Start by clearing all current objects
-###                            self.parent.ControlObject.ClearAllWindows()
-##
-##                        # Determine what Keyword Examples exist for the specified Clip so that they can be removed from the
-##                        # Database Tree if the delete succeeds.  We must do that first, as the Clips themselves and the
-##                        # ClipKeywords Records will be deleted later!
-##                        kwExamples = DBInterface.list_all_keyword_examples_for_a_clip(selData.recNum)
-##
-##                        try:
-##                            # Try to delete the Clip, initiating a Transaction
-##                            delResult = clip.db_delete(1)
-##                            # If successful, remove the Clip Node from the Database Tree
-##                            if delResult:
-##                                # Get a temporary Selection Pointer
-##                                tempSel = sel
-##                                # Get the full Node Branch by climbing it to one level above the root
-##                                nodeList = (self.GetItemText(tempSel),)
-##                                while (self.GetItemParent(tempSel) != self.GetRootItem()):
-##                                    tempSel = self.GetItemParent(tempSel)
-##                                    nodeList = (self.GetItemText(tempSel),) + nodeList
-##
-##                                # Deleting all these ClipKeyword records needs to remove Keyword Example Nodes in the DBTree.
-##                                # That needs to be done here in the User Interface rather than in the Clip Object, as that is
-##                                # a user interface issue.  The Clip Record and the Clip Keywords Records get deleted, but
-##                                # the user interface does not get cleaned up by deleting the Clip Object.
-##                                for (kwg, kw, clipNum, clipID) in kwExamples:
-##                                    self.delete_Node((_("Keywords"), kwg, kw, clipID), 'KeywordExampleNode', exampleClipNum = clipNum)
-##
-##                                # Call the DB Tree's delete_Node method.
-##                                self.delete_Node(nodeList, 'ClipNode')
-##                                # ... and if the Notes Browser is open, ...
-##                                if self.parent.ControlObject.NotesBrowserWindow != None:
-##                                    # ... we need to CHECK to see if any notes were deleted.
-##                                    self.parent.ControlObject.NotesBrowserWindow.UpdateTreeCtrl('C')
-##                                # If this clip is from the episode which is currently being displayed ...
-##
-##                                # If the current main object is an Episode and it's the episode that contains the
-##                                # deleted Clip, we need to update the Keyword Visualization!
-##                                if (isinstance(self.parent.ControlObject.currentObj, Episode.Episode)) and \
-##                                   (clipEpisodeNum == self.parent.ControlObject.currentObj.number):
-##                                    self.parent.ControlObject.UpdateKeywordVisualization()
-##                                # Even if this computer doesn't need to update the keyword visualization others, might need to.
-##                                if not TransanaConstants.singleUserVersion:
-##                                    # We need to pass the type of the current object, the deleted Clip's record number, and
-##                                    # the deleted Clip's Episode number.
-##                                    if DEBUG:
-##                                        print 'Message to send = "UKV %s %s %s"' % ('Clip', clipNum, clipEpisodeNum)
-##                                        
-##                                    if TransanaGlobal.chatWindow != None:
-##                                        TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('Clip', clipNum, clipEpisodeNum))
-##                        # Handle the RecordLocked exception, which arises when records are locked!
-##                        except RecordLockedError, e:
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            if 'unicode' in wx.PlatformInfo:
-##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                                prompt = unicode(_('You cannot delete Clip "%s".\n%s'), 'utf8')
-##                            else:
-##                                prompt = _('You cannot delete Clip "%s".\n%s')
-##                            errordlg = Dialogs.ErrorDialog(None, prompt % (clip.id, e.explanation))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
-##                        # Handle other exceptions
-##                        except:
-##                            if DEBUG:
-##                                import traceback
-##                                traceback.print_exc(file=sys.stdout)
-##
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            prompt = "%s : %s"
-##                            if 'unicode' in wx.PlatformInfo:
-##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                                prompt = unicode(prompt, 'utf8')
-##                            errordlg = Dialogs.ErrorDialog(None, prompt % (sys.exc_info()[0],sys.exc_info()[1]))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
-
         elif n == 11:    # Locate Clip in Episode
 
             self.parent.ControlObject.LocateClipInEpisode(selData.recNum)
@@ -8580,110 +8447,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                self.YesToAll = False
                 # For each Snapshot in the selected items ...
                 for item in selItems:
                     self.DeleteQuoteClipSnapshotItem(item)
                     
-##                    # ... grab the individual item ...
-##                    sel = item
-##                    # ... and get the item's data
-##                    selData = self.GetPyData(sel)
-##
-##                    # Load the Selected Snapshot, signalling that we intend to delete it
-##                    tmpSnapshot = Snapshot.Snapshot(selData.recNum, suppressEpisodeError = True)
-##                    # Remember the Snapshot Number, to use after the Snapshot has been deleted
-##                    snapshotNum = tmpSnapshot.number
-##                    # Get user confirmation of the Snapshot Delete request
-##                    if 'unicode' in wx.PlatformInfo:
-##                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                        prompt = unicode(_('Are you sure you want to delete Snapshot "%s" and all related Notes?'), 'utf8')
-##                    else:
-##                        prompt = _('Are you sure you want to delete Snapshot "%s" and all related Notes?')
-##                    dlg = Dialogs.QuestionDialog(self, prompt % self.GetItemText(sel))
-##                    result = dlg.LocalShowModal()
-##                    dlg.Destroy()
-##
-##                    # If the user confirms the Delete Request...
-##                    if result == wx.ID_YES:
-##
-##                        # Determine what Keyword Examples exist for the specified Snapshot so that they can be removed from the
-##                        # Database Tree if the delete succeeds.  We must do that first, as the Snapshots themselves and the
-##                        # ClipKeywords Records will be deleted later!
-####                        kwExamples = DBInterface.list_all_keyword_examples_for_a_snapshot(snapshotNum)
-##
-###                        print "DatabaseTreeTab.OnSnapshotCommand() -- Deleting Snapshot:"
-###                        print "  Need to delete Keyword Example Nodes !!"
-###                        print
-##
-##                        # We need to remember the Episode Number after the Snapshot is deleted
-##                        tmpEpisodeNum = tmpSnapshot.episode_num
-##
-##                        try:
-##                            # Get the Snapshot's Node List
-##                            nodeList = (_("Collections"), ) + tmpSnapshot.GetNodeData()
-##                            # Try to delete the Snapshot, initiating a Transaction
-##                            delResult = tmpSnapshot.db_delete(1)
-##                            # If successful, remove the Clip Node from the Database Tree
-##                            if delResult:
-###                                # Get a temporary Selection Pointer
-###                                tempSel = sel
-###                                # Get the full Node Branch by climbing it to one level above the root
-###                                nodeList = (self.GetItemText(tempSel),)
-###                                while (self.GetItemParent(tempSel) != self.GetRootItem()):
-###                                    tempSel = self.GetItemParent(tempSel)
-###                                    nodeList = (self.GetItemText(tempSel),) + nodeList
-##
-##                                # Deleting all these ClipKeyword records needs to remove Keyword Example Nodes in the DBTree.
-##                                # That needs to be done here in the User Interface rather than in the Clip Object, as that is
-##                                # a user interface issue.  The Clip Record and the Clip Keywords Records get deleted, but
-##                                # the user interface does not get cleaned up by deleting the Clip Object.
-###                                for (kwg, kw, clipNum, clipID) in kwExamples:
-###                                    self.delete_Node((_("Keywords"), kwg, kw, clipID), 'KeywordExampleNode', exampleClipNum = clipNum)
-##
-##                                # Call the DB Tree's delete_Node method.
-##                                self.delete_Node(nodeList, 'SnapshotNode')
-##                                # ... and if the Notes Browser is open, ...
-##                                if self.parent.ControlObject.NotesBrowserWindow != None:
-##                                    # ... we need to CHECK to see if any notes were deleted.
-##                                    self.parent.ControlObject.NotesBrowserWindow.UpdateTreeCtrl('C')
-##
-##                                # If the Snapshot was attached to an Episode ...
-##                                if tmpEpisodeNum > 0:
-##                                    # ... see if the Keyword visualization needs to be updated.
-##                                    self.parent.ControlObject.UpdateKeywordVisualization()
-##                                    # Even if this computer doesn't need to update the keyword visualization others, might need to.
-##                                    if not TransanaConstants.singleUserVersion:
-##                                        # We need to update the Episode Keyword Visualization
-##                                        if TransanaGlobal.chatWindow != None:
-##                                            TransanaGlobal.chatWindow.SendMessage("UKV %s %s %s" % ('Episode', tmpEpisodeNum, 0))
-##                                    
-##
-##                        # Handle the RecordLocked exception, which arises when records are locked!
-##                        except RecordLockedError, e:
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            if 'unicode' in wx.PlatformInfo:
-##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                                prompt = unicode(_('You cannot delete Snapshot "%s".\n%s'), 'utf8')
-##                            else:
-##                                prompt = _('You cannot delete Snapshot "%s".\n%s')
-##                            errordlg = Dialogs.ErrorDialog(None, prompt % (tmpSnapshot.id, e.explanation))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
-##                        # Handle other exceptions
-##                        except:
-##                            if DEBUG:
-##                                import traceback
-##                                traceback.print_exc(file=sys.stdout)
-##
-##                            # Display the Exception Message, allow "continue" flag to remain true
-##                            prompt = "%s : %s"
-##                            if 'unicode' in wx.PlatformInfo:
-##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-##                                prompt = unicode(prompt, 'utf8')
-##                            errordlg = Dialogs.ErrorDialog(None, prompt % (sys.exc_info()[0],sys.exc_info()[1]))
-##                            errordlg.ShowModal()
-##                            errordlg.Destroy()
-
         elif n == 10:      # Load Snapshot Context
             # Load the Snapshot.
             snapshot = Snapshot.Snapshot(selData.recNum)
@@ -8840,9 +8609,21 @@ class _DBTreeCtrl(wx.TreeCtrl):
             prompt = unicode(_('Are you sure you want to delete Snapshot "%s" and all related Notes?'), 'utf8')
             delPrompt = unicode(_('You cannot delete Snapshot "%s".\n%s'), 'utf8')
                 
-        dlg = Dialogs.QuestionDialog(self, prompt % self.GetItemText(sel))
-        result = dlg.LocalShowModal()
-        dlg.Destroy()
+        # If Yes To All has not been set ...
+        if not self.YesToAll:
+            dlg = Dialogs.QuestionDialog(self, prompt % self.GetItemText(sel), yesToAll=True)
+            result = dlg.LocalShowModal()
+            # If we got a Yes To All request ...
+            if result == dlg.YESTOALLID:
+                # ... change the Yes To All Flag ...
+                self.YesToAll = True
+                # ... and indicate that our response was a Yes.
+                result = wx.ID_YES
+            dlg.Destroy()
+        # If we have Yes To All flagged ...
+        else:
+            # ... that counts as a Yes
+            result = wx.ID_YES
 
         # If the user confirms the Delete Request...
         if result == wx.ID_YES:
@@ -9062,6 +8843,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                 result = wx.ID_YES
 
             if result == wx.ID_YES:
+                # Create a flag for Yes To All
+                YesToAll = False
                 # For each Note in the selected items ...
                 for item in selItems:
                     # ... grab the individual item ...
@@ -9071,15 +8854,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
                     # Load the Selected Note
                     note = Note.Note(selData.recNum)
-                    # Get user confirmation of the Note Delete request
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('Are you sure you want to delete Note "%s"?'), 'utf8')
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        # Get user confirmation of the Note Delete request
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('Are you sure you want to delete Note "%s"?'), 'utf8')
+                        else:
+                            prompt = _('Are you sure you want to delete Note "%s"?')
+                        dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
                     else:
-                        prompt = _('Are you sure you want to delete Note "%s"?')
-                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel)))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                     # If the user confirms the Delete Request...
                     if result == wx.ID_YES:
                         try:
@@ -9322,6 +9117,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
             self.parent.add_keyword(kwg_name)
 
         elif n == 2:    # Delete this keyword group
+            # Create a flag for Yes To All
+            YesToAll = False
             # For each Keyword Group in the selected items ...
             for item in selItems:
                 # ... grab the individual item ...
@@ -9342,13 +9139,25 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Signal that we do NOT want to delete the Keyword!
                     result = wx.ID_NO
                 else:
-                    msg = _('Are you sure you want to delete Keyword Group "%s", all of its keywords, and all instances of those keywords from Quotes, Clips, and Snapshots?')
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        msg = unicode(msg, 'utf8')
-                    dlg = Dialogs.QuestionDialog(self, msg % kwg_name)
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        msg = _('Are you sure you want to delete Keyword Group "%s", all of its keywords, and all instances of those keywords from Quotes, Clips, and Snapshots?')
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            msg = unicode(msg, 'utf8')
+                        dlg = Dialogs.QuestionDialog(self, msg % kwg_name, yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
+                    else:
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                 if result == wx.ID_YES:
                     try:
                         # Delete the Keyword group
@@ -9481,6 +9290,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
             wx.TheClipboard.Close()
 
         elif n == 3:    # Delete this keyword
+            # Create a flag for Yes To All
+            YesToAll = False
             # For each Keyword in the selected items ...
             for item in selItems:
                 # ... grab the individual item ...
@@ -9501,13 +9312,25 @@ class _DBTreeCtrl(wx.TreeCtrl):
                     # Signal that we do NOT want to delete the Keyword!
                     result = wx.ID_NO
                 else:
-                    msg = _('Are you sure you want to delete Keyword "%s : %s" and all instances of it from Quotes, Clips, and Snapshots?')
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        msg = unicode(msg, 'utf8')
-                    dlg = Dialogs.QuestionDialog(self, msg % (kw_group, kw_name))
-                    result = dlg.LocalShowModal()
-                    dlg.Destroy()
+                    # If Yes To All has not been set ...
+                    if not YesToAll:
+                        msg = _('Are you sure you want to delete Keyword "%s : %s" and all instances of it from Quotes, Clips, and Snapshots?')
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            msg = unicode(msg, 'utf8')
+                        dlg = Dialogs.QuestionDialog(self, msg % (kw_group, kw_name), yesToAll=True)
+                        result = dlg.LocalShowModal()
+                        # If we got a Yes To All request ...
+                        if result == dlg.YESTOALLID:
+                            # ... change the Yes To All Flag ...
+                            YesToAll = True
+                            # ... and indicate that our response was a Yes.
+                            result = wx.ID_YES
+                        dlg.Destroy()
+                    # If we have Yes To All flagged ...
+                    else:
+                        # ... that counts as a Yes
+                        result = wx.ID_YES
                 if result == wx.ID_YES:
                     try:
                         # Delete the Keyword
@@ -9782,6 +9605,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
             self.select_Node(nodeList, 'ClipNode')
             
         elif n == 2:    # Delete
+            # Create a flag for Yes To All
+            YesToAll = False
             # For each Keyword Example in the selected items ...
             for item in selItems:
                 # ... grab the individual item ...
@@ -9791,15 +9616,27 @@ class _DBTreeCtrl(wx.TreeCtrl):
 
                 kwg = self.GetItemText(self.GetItemParent(self.GetItemParent(sel)))
                 kw = self.GetItemText(self.GetItemParent(sel))
-                # Get user confirmation of the Keyword Example Add request
-                if 'unicode' in wx.PlatformInfo:
-                    # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                    prompt = unicode(_('Do you want to remove Clip "%s" as an example of Keyword "%s:%s"?'), 'utf8')
+                # If Yes To All has not been set ...
+                if not YesToAll:
+                    # Get user confirmation of the Keyword Example Add request
+                    if 'unicode' in wx.PlatformInfo:
+                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                        prompt = unicode(_('Do you want to remove Clip "%s" as an example of Keyword "%s:%s"?'), 'utf8')
+                    else:
+                        prompt = _('Do you want to remove Clip "%s" as an example of Keyword "%s:%s"?')
+                    dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel), kwg, kw), yesToAll=True)
+                    result = dlg.LocalShowModal()
+                    # If we got a Yes To All request ...
+                    if result == dlg.YESTOALLID:
+                        # ... change the Yes To All Flag ...
+                        YesToAll = True
+                        # ... and indicate that our response was a Yes.
+                        result = wx.ID_YES
+                    dlg.Destroy()
+                # If we have Yes To All flagged ...
                 else:
-                    prompt = _('Do you want to remove Clip "%s" as an example of Keyword "%s:%s"?')
-                dlg = Dialogs.QuestionDialog(self, prompt % (self.GetItemText(sel), kwg, kw))
-                result = dlg.LocalShowModal()
-                dlg.Destroy()
+                    # ... that counts as a Yes
+                    result = wx.ID_YES
                 # If confirmed ...
                 if result == wx.ID_YES:
                     # ... remove keyword example status
