@@ -343,6 +343,10 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             # ... set the varaible to None so we don't try to destroy it!!
             self.btnSnapshot = None
 
+        # Add a Playback Speed Indicator
+        self.playbackSpeed = wx.StaticText(self, -1, '100%')
+        hBox2.Add(self.playbackSpeed, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 2)
+
         # Add the second horizontal sizer to the vertical sizer.
         vBox.Add(hBox2, 0, wx.EXPAND)
 
@@ -640,6 +644,8 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         for mp in self.mediaPlayers:
             # ... set the current video position, adjusting for the media player's offset
             mp.SetPlayBackSpeed(playBackSpeed)
+            # Show the playback speed on screen
+            self.playbackSpeed.SetLabelText("%3d%%" % (playBackSpeed * 10,))
 
     def UpdatePlayState(self, playState):
         """ Take a PlayState Change from the Video Player and pass it on to the ControlObject.
@@ -722,6 +728,19 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
             newPos = int(float(currentPosition + self.globalOffset - start) / float(end - start) * 1000.0)
             # Set the new video selection
             self.videoSlider.SetValue(newPos)
+
+            # Get the ACTUAL playback rate
+            playbackRate = round(self.mediaPlayers[0].movie.GetPlaybackRate(), 1)
+
+            # Check to see if the ACTUAL playback rate matches the DESIRED playback rate
+            if (playbackRate == 1.0) and (round(self.mediaPlayers[0].GetPlayBackSpeed(), 1) != 1.0):
+                # If not, reset the DESIRED rate to 1.0
+                self.SetPlayBackSpeed(10)
+                # Display an error message to the user about playback speed.
+                prompt = _('Transana cannot change the Video Playback Speed for this format.\nTry creating an MP4 file using the Media Conversion tool.')
+                tmpDlg = Dialogs.ErrorDialog(self, prompt)
+                tmpDlg.ShowModal()
+                tmpDlg.Destroy()
 
     def UpdateVideoWindowPosition(self, left, top, width, height):
         """ When the Video Window is updated, it should request that all other windows be repositioned accordingly
@@ -1035,6 +1054,8 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
         for mp in self.mediaPlayers:
             # ... set the new playback speed.  Rates here range from 1 to 20, a factor of 10 larger than GetPlayBackSpeed.  Weird.
             mp.SetPlayBackSpeed(rate * 10)
+            # Show the playback speed on screen
+            self.playbackSpeed.SetLabelText("%3d%%" % (rate * 100,))
 
     def ChangeLanguages(self):
         """ Update all prompts for the Video Window when changing interface languages """
