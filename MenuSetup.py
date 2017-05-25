@@ -218,8 +218,8 @@ class MenuSetup(wx.MenuBar):
         self.toolsmenu.Append(MENU_TOOLS_NOTESBROWSER, _("&Notes Browser"))
         self.toolsmenu.Append(MENU_TOOLS_FILEMANAGEMENT, _("&File Management"))
         self.toolsmenu.Append(MENU_TOOLS_MEDIACONVERSION, _("&Media Conversion"))
-        self.toolsmenu.Append(MENU_TOOLS_IMPORT_DATABASE, _("&Import Database"))
-        self.toolsmenu.Append(MENU_TOOLS_EXPORT_DATABASE, _("&Export Database"))
+        self.toolsmenu.Append(MENU_TOOLS_IMPORT_DATABASE, _("&Import Data"))
+        self.toolsmenu.Append(MENU_TOOLS_EXPORT_DATABASE, _("&Export Data"))
         self.toolsmenu.Append(MENU_TOOLS_COLORCONFIG, _("&Graphics Color Configuration"))
         self.toolsmenu.Append(MENU_TOOLS_BATCHWAVEFORM, _("&Batch Waveform Generator"))
         if not TransanaConstants.singleUserVersion:

@@ -78,7 +78,7 @@ class XMLImport(Dialogs.GenForm):
         r1Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Create the main form prompt
-        prompt = _('Please select a Transana XML File to import.')
+        prompt = _('Please select the File to import.')
         importText = wx.StaticText(self.panel, -1, prompt)
 
         # Add the import message to the dialog box
@@ -96,7 +96,7 @@ class XMLImport(Dialogs.GenForm):
         # Create a VERTICAL sizer for the next element
         v1 = wx.BoxSizer(wx.VERTICAL)
         # Add the Import File Name element
-        self.XMLFile = self.new_edit_box(_("Transana-XML Filename"), v1, '')
+        self.XMLFile = self.new_edit_box(_("Filename"), v1, '')
         # If importData is provided ...
         if importData != None:
             # ... the first element is the Transana-XML file name to be imported

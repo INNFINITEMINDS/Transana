@@ -448,7 +448,8 @@ class GenForm(wx.Dialog):
         # If we're using Sizers ...
         elif isinstance(layout, wx.BoxSizer):
             # ... add the text label to the sizer that was passed in.
-            layout.Add(txt, 0, wx.BOTTOM, 3)
+            layout.Add(txt, 0, wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 3)
+            layout.Add((10, 0))
 
         # Create the Text Control
         edit = wx.TextCtrl(self.panel, -1, def_text, style=style)

@@ -1387,11 +1387,11 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             dlg.Destroy()
 
         # Create an Import Database dialog
-        temp = XMLImport.XMLImport(self.ControlObject.TranscriptWindow.dlg, -1, _('Transana XML Import'))
+        temp = XMLImport.XMLImport(self.ControlObject.TranscriptWindow.dlg, -1, _('Transana Data Import'))
         # Get the User Input
         result = temp.get_input()
         # If the user gave a valid response ...
-        if (result != None) and (result[_("Transana-XML Filename")] != ''):
+        if (result != None) and (result[_("Filename")] != ''):
             # See if there's a Notes Browser open
             if self.ControlObject.NotesBrowserWindow != None:
                 # If so, close it, which saves anything being edited.
@@ -1427,7 +1427,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
     def OnExportDatabase(self, event):
         """ Export Database """
         # Create an Export Database dialog
-        temp = XMLExport.XMLExport(self.ControlObject.TranscriptWindow.dlg, -1, _('Transana XML Export'))
+        temp = XMLExport.XMLExport(self.ControlObject.TranscriptWindow.dlg, -1, _('Transana Data Export'))
         # Set up the confirmation loop signal variable
         repeat = True
         # While we are in the confirmation loop ...
@@ -1438,8 +1438,10 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             result = temp.get_input()
             # if the user clicked OK ...
             if result != None:
+                result['Format'] = temp.formatCtrl.GetSelection()
+                result['Content'] = temp.contentCtrl.GetSelection()
                 # ... make sure they entered a file name.
-                if result[_('Transana-XML Filename')] == '':
+                if result[_("Filename")] == '':
                     # If not, create a prompt to inform the user ...
                     prompt = unicode(_('A file name is required'), 'utf8') + '.'
                     # ... and signal that we need to repeat the file prompt
@@ -1447,16 +1449,24 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                 # If they did ...
                 else:
                     # ... error check the file name.  If it does not have a PATH ...
-                    if os.path.split(result[_('Transana-XML Filename')])[0] == u'':
+                    if os.path.split(result[_("Filename")])[0] == u'':
                         # ... add the Media Path to the file name
-                        fileName = os.path.join(TransanaGlobal.configData.videoPath, result[_('Transana-XML Filename')])
+                        fileName = os.path.join(TransanaGlobal.configData.videoPath, result[_("Filename")])
                     # If there is a path, just continue.
                     else:
-                        fileName = result[_('Transana-XML Filename')]
-                    # If the file does not have a .TRA extension ...
-                    if fileName[-4:].lower() != '.tra':
-                        # ... add one
-                        fileName = fileName + '.tra'
+                        fileName = result[_("Filename")]
+                    # For Transana-XML files ...
+                    if result['Format'] == 0:
+                        # If the file does not have a .TRA extension ...
+                        if fileName[-4:].lower() != '.tra':
+                            # ... add one
+                            fileName = fileName + '.tra'
+                    # For QDA-XML files ...
+                    elif result['Format'] == 1:
+                        # If the file does not have a .QDE extension ...
+                        if fileName[-4:].lower() != '.qde':
+                            # ... add one
+                            fileName = fileName + '.qde'
                     # Set the FORM's field value to the modified file name
                     temp.XMLFile.SetValue(fileName)
 
@@ -1466,7 +1476,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                     # For each illegal character ...
                     for char in illegalChars:
                         # ... see if that character appears in the file name the user entered
-                        if char in result[_('Transana-XML Filename')]:
+                        if char in result[_("Filename")]:
                             # If so, create a prompt to inform the user ...
                             prompt = unicode(_('There is an illegal character in the file name.'), 'utf8')
                             # ... and signal that we need to repeat the file prompt ...
@@ -1504,9 +1514,23 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                     dlg2.Destroy()
 
         # If the user requests it ...
-        if (result != None) and (result[_("Transana-XML Filename")] != ''):
-            # ... export the data
-            temp.Export()
+        if (result != None) and (result[_("Filename")] != ''):
+            # For Transana-XML Export ...
+            if temp.formatCtrl.GetSelection() == 0:
+                # ... export the data in Transana-XML format
+                temp.Export()
+            # For QDA-XML Export ...
+            elif temp.formatCtrl.GetSelection() == 1:
+
+                # QDA-XML export of full databases is not yet available.
+                if temp.contentCtrl.GetSelection() == 0:
+                    errDlg = Dialogs.ErrorDialog(self, u'Full Database Export in QDA-XML format is not yet avaialble.')
+                    errDlg.ShowModal()
+                    errDlg.Destroy()
+                elif temp.contentCtrl.GetSelection() == 1:
+                    
+                # ... export the data in QDA-XML format
+                    temp.QDAExport()
         # Close the Export Database dialog
         temp.Close()
 
@@ -2232,8 +2256,8 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_NOTESBROWSER, _("&Notes Browser"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_FILEMANAGEMENT, _("&File Management"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_MEDIACONVERSION, _("&Media Conversion"))
-        self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_IMPORT_DATABASE, _("&Import Database"))
-        self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_EXPORT_DATABASE, _("&Export Database"))
+        self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_IMPORT_DATABASE, _("&Import Data"))
+        self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_EXPORT_DATABASE, _("&Export Data"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_COLORCONFIG, _("&Graphics Color Configuration"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_BATCHWAVEFORM, _("&Batch Waveform Generator"))
         if not TransanaConstants.singleUserVersion:
