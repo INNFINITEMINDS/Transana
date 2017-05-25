@@ -64,6 +64,8 @@ import cPickle
 import os
 # import Python's sys module
 import sys
+# import Python's warnings module
+import warnings
 # import Python's string module
 import string
 # import Transana's Clip object
@@ -2163,6 +2165,8 @@ def get_db(dbToOpen=None, usePrompt=True):
 
                         # If we have MySQL 4.1 or later, we have UTF-8 support and should use it.
                         if float(TransanaGlobal.DBVersion) >= 4.1:
+                            # Start suppressing database warnings
+                            warnings.filterwarnings('ignore', category = MySQLdb.Warning)
                             # Get a Database Cursor
                             dbCursor = _dbref.cursor()
                             # Set Character Encoding settings
@@ -2175,7 +2179,9 @@ def get_db(dbToOpen=None, usePrompt=True):
                             dbCursor.execute('SET collation_connection = utf8_general_ci')
                             dbCursor.execute('SET collation_database = utf8_general_ci')
                             dbCursor.execute('SET collation_server = utf8_general_ci')
-                            
+                            # Restore database warnings
+                            warnings.resetwarnings()
+                            # Select the appropriate database
                             dbCursor.execute('USE %s' % databaseName.encode('utf8'))
                             # Set the global character encoding to UTF-8
                             TransanaGlobal.encoding = 'utf8'
