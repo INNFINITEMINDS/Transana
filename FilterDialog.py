@@ -147,6 +147,7 @@ class FilterDialog(wx.Dialog):
           showSnapshotImage   (integer  0 = Full Size, 1 = Medium, 2 = Small, 3 = Don't Show)
           showSnapshotCoding  (boolean)
           showKeywords        (boolean)
+          showBarChart        (integer  0 = Show, Alpha Sort, 1 = Show, Freq Sort, 2 = Hide, Alpha Sort, 3 = Hide, Freq Sort)
           showNestedData      (boolean)
           showHyperlink       (boolean)
           showFile            (boolean)
@@ -378,6 +379,30 @@ class FilterDialog(wx.Dialog):
                 self.showKeywords = wx.CheckBox(self.reportContentsPanel, -1, prompt)
                 self.showKeywords.SetValue(self.kwargs['showKeywords'])
                 pnlVSizer.Add(self.showKeywords, 0, wx.TOP | wx.LEFT, 10)
+            if self.kwargs.has_key('showBarChart') and self.keywordFilter:
+                pnlHSizer = wx.BoxSizer(wx.HORIZONTAL)
+                prompt = _("Show Bar Chart")
+                self.showBarChart = wx.CheckBox(self.reportContentsPanel, -1, prompt)
+                # Values of 0 or 1 indicate we should SHOW the BarChart
+                if self.kwargs['showBarChart'] in [0, 1]:
+                    showValue = True
+                else:
+                    showValue = False
+                self.showBarChart.SetValue(showValue)
+                pnlHSizer.Add(self.showBarChart, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+                # We always show Sort Order selection along with the BarChart
+                prompt = _("Sort Bar Chart")
+                choices = [_('Alphabetical'), _('Frequency')]
+                self.sortBarChart = wx.RadioBox(self.reportContentsPanel, -1, prompt, choices=choices)
+                # Values of 0 and 2 indicate Alpha sort, 1 and 3 indicate Frequency Sort
+                if self.kwargs['showBarChart'] in [0, 2]:
+                    showValue = 0
+                else:
+                    showValue = 1
+                # Set the appropriate radio button
+                self.sortBarChart.SetSelection(showValue)
+                pnlHSizer.Add(self.sortBarChart, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 10)
+                pnlVSizer.Add(pnlHSizer, 0, wx.TOP | wx.LEFT, 10)
             if self.kwargs.has_key('showComments'):
                 self.showComments = wx.CheckBox(self.reportContentsPanel, -1, _("Show Comments"))
                 self.showComments.SetValue(self.kwargs['showComments'])
@@ -1664,6 +1689,20 @@ class FilterDialog(wx.Dialog):
                             # Set the Show Quote Text value
                             self.showQuoteText.SetValue((filterData == 'True') or (filterData == '1'))
 
+                    # If the data is for the Show Bar Chart value (filterDataType 117) ...
+                    elif (filterDataType == 117):
+                        if self.showBarChart:
+                            if type(filterData).__name__ == 'array':
+                                filterData = filterData.tostring()
+                            # Set the Show Bar Chart value
+                            self.showBarChart.SetValue((filterData in ['0', '1']))
+                            # Set the Sort Bar Chart value
+                            if filterData in ['0', '2']:
+                                value = 0
+                            else:
+                                value = 1
+                            self.sortBarChart.SetSelection(value)
+
                     # If we have an unknown filterDataType ...
                     else:
                         print "Unknown Filter Data:", self.reportType, reportScope, self.configName.encode('utf8'), filterDataType, type(filterData), filterData
@@ -1944,6 +1983,7 @@ class FilterDialog(wx.Dialog):
                         # 114 = Contents > Show Document Import Date
                         # 115 = Contents > Show Quote Notes
                         # 116 = Contents > Show Quote Text
+                        # 117 = Contents > Show Bar Chart
 
                         # If we have a Series Keyword Sequence Map (reportType 5), or
                         # a Series Keyword Bar Graph (reportType 6), or
@@ -2155,12 +2195,17 @@ class FilterDialog(wx.Dialog):
                         # insert Show Media / Source Document Filename Data (FilterDataType 102),
                         # Show Document Position / Clip Time (FilterDataType 103),
                         # Show Quote / Clip Keywords (FilterDataType 105),
+                        # Show BarChart (FilterDataType 117),
                         if self.reportType in [10, 11, 12, 19]:
                             if self.quoteFilter or self.clipFilter or self.snapshotFilter:
                                 self.SaveFilterData(self.reportType, reportScope, configName, 102, self.showFile.IsChecked())
                                 self.SaveFilterData(self.reportType, reportScope, configName, 103, self.showTime.IsChecked())
                             if self.keywordFilter:
                                 self.SaveFilterData(self.reportType, reportScope, configName, 105, self.showKeywords.IsChecked())
+                                value = self.sortBarChart.GetSelection()
+                                if not self.showBarChart.IsChecked():
+                                    value += 2
+                                self.SaveFilterData(self.reportType, reportScope, configName, 117, value)
 
                         # If we have an Episode Report (reportType 11),
                         # a Collection Report (reportType 12), or
@@ -2581,6 +2626,23 @@ class FilterDialog(wx.Dialog):
     def GetShowKeywords(self):
         """ Return the value of showKeywords on the Report Contents tab """
         return self.showKeywords.GetValue()
+
+    def GetShowBarChart(self):
+        """ Return the value of showBarChart and sortBarChart on the Reports Contents tab
+              0 = show, alpha sort
+              1 = show, freq sort
+              2 = hide, alpha sort
+              3 = hide, freq sort """
+        # Set a default value
+        value = 0
+        # If the BarChart should NOT be shown ...
+        if not self.showBarChart.GetValue():
+            # ... increase the value by 2
+            value += 2
+        # If the BarChart should sort by Frequency, increase the value by 1 (alpha = 0, freq = 1 here!)
+        value += self.sortBarChart.GetSelection()
+        # Return the value
+        return value
 
     def GetShowFile(self):
         """ Return the value of showFile on the Report Contents tab """

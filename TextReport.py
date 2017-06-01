@@ -57,6 +57,8 @@ if __name__ == '__main__':
 import Dialogs
 # Import Transana's Filter Dialog
 import FilterDialog
+# Import Transana's BarChart Module
+import BarChartGraphic
 # import Transana Miscellaneous functions
 import Misc
 # Import Transana's Constants
@@ -144,7 +146,7 @@ class TextReport(wx.Frame):
         # Create the basic Frame structure with a white background
         wx.Frame.__init__(self, parent, id, title, size=wx.Size(width, height), style=wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL | wx.NO_FULL_REPAINT_ON_RESIZE)
         self.SetBackgroundColour(wx.WHITE)
-        
+
         # Set the report's icon
         transanaIcon = wx.Icon(os.path.join(TransanaGlobal.programDir, "images", "Transana.ico"), wx.BITMAP_TYPE_ICO)
         self.SetIcon(transanaIcon)
@@ -286,10 +288,20 @@ class TextReport(wx.Frame):
 
         # Add a Status Bar
         self.CreateStatusBar()
+
+        # Placed up front so other screen elementes will be placed OVER it!  NOT in the Sizer.
+        self.barChartGraphic = BarChartGraphic.BarChartGraphic(self)
+
+        # Create a Sizer
+        s1 = wx.BoxSizer(wx.HORIZONTAL)
+
         # If we're using the RTC 
         if TransanaConstants.USESRTC:
             # Add a Rich Text Edit control to the Report Frame.  This is where the actual report text goes.
             self.reportText = TranscriptEditor_RTC.TranscriptEditor(self)
+            # Add the Rich Text Edit Control to the Sizer
+            s1.Add(self.reportText, 1, wx.EXPAND)
+            
             # Clear / initialize the document
             self.reportText.ClearDoc()
 ##        # If we're using STC
@@ -305,8 +317,16 @@ class TextReport(wx.Frame):
         # Get the global print data
         self.printData = TransanaGlobal.printData
 
+        # If the report has no Parent ...
         if parent == None:
+            # ... center it on the screen
             TransanaGlobal.CenterOnPrimary(self)
+
+        # Define the Page's main sizer
+        self.SetSizer(s1)
+        # Lay out the page
+        self.Layout()
+        self.SetAutoLayout(True)
 
         # Show the Frame
         self.Show(True)

@@ -5315,7 +5315,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showFile=True,
                                             showTime=True,
                                             showDocImportDate=True,
-                                            showKeywords=True)
+                                            showKeywords=True,
+                                            showBarChart=1)
 
         elif n == 9:    # Library Word Frequency Report
             
@@ -5660,12 +5661,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showTime=True,
                                             showSourceInfo=True,
                                             showQuoteText=True,
-##                                            showSnapshotImage=0,
-##                                            showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
-                                            showQuoteNotes=False ) # ,
-##                                            showSnapshotNotes=False)
+                                            showQuoteNotes=False )
 
         elif n == 7:    # Document Word Frequency Report
 
@@ -6028,6 +6027,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=0,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showClipNotes=False,
                                             showSnapshotNotes=False)
@@ -6336,6 +6336,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=0,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showCollectionNotes=False,
                                             showQuoteNotes=False,
@@ -6876,6 +6877,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=0,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showCollectionNotes=False,
                                             showQuoteNotes=False,
@@ -9744,6 +9746,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=0,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showCollectionNotes=False,
                                             showQuoteNotes=False,
@@ -9793,7 +9796,8 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             treeCtrl=self,
                                             showFile=True,
                                             showTime=True,
-                                            showKeywords=True)
+                                            showKeywords=True,
+                                            showBarChart=1)
 
         elif n == 2:    # Search Library Root Word Frequency Report
 
@@ -9852,12 +9856,10 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showTime=True,
                                             showSourceInfo=True,
                                             showQuoteText=True,
-##                                            showSnapshotImage=0,
-##                                            showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
-                                            showQuoteNotes=False ) # ,
-##                                            showSnapshotNotes=False)
+                                            showQuoteNotes=False )
 
         elif n == 3:    # Search Document Root Word Frequency Report
 
@@ -9918,6 +9920,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=0,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showClipNotes=False,
                                             showSnapshotNotes=False)
@@ -10038,6 +10041,7 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                             showSnapshotImage=True,
                                             showSnapshotCoding=True,
                                             showKeywords=True,
+                                            showBarChart=1,
                                             showComments=False,
                                             showCollectionNotes=False,
                                             showQuoteNotes=False,

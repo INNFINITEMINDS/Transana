@@ -111,6 +111,7 @@ class ReportGenerator(wx.Object):
         # showSnapshotImage=True,
         # showSnapshotCoding=True,
         # showKeywords=False,
+        # showBarChart=0,      0 = show, Alpha sort  1 = show, Freq sort  2 = hide, Alpha sort  3 = hide, Freq sort
         # showComments=False,
         # showCollectionNotes=False
         # showDocumentNotes=False
@@ -199,6 +200,11 @@ class ReportGenerator(wx.Object):
             self.showKeywords = True
         else:
             self.showKeywords = False
+        if kwargs.has_key('showBarChart'):
+            self.showBarChart = kwargs['showBarChart']
+        else:
+            # -1 indicates this value is not in use.
+            self.showBarChart = -1
         if kwargs.has_key('showComments') and kwargs['showComments']:
             self.showComments = True
         else:
@@ -1891,7 +1897,7 @@ class ReportGenerator(wx.Object):
                                         self.itemsCounted.append(('Snapshot', tmpObj.number, keywordGroup, keyword))
                                 else:
                                     print "Line 1868", objType
-                                    
+
                     # if we are supposed to show Comments ...
                     if self.showComments:
                         if objType == 'Quote':
@@ -2837,6 +2843,87 @@ class ReportGenerator(wx.Object):
                 reportText.WriteText(prompt % data)
                 reportText.WriteText('\n')
 
+            # If we should show the BarChart ...
+            if (self.showBarChart in [0, 1]) and (len(keywordCounts) > 0):
+                # ... initialize the data and dataLabels lists
+                data = []
+                dataLabels = []
+                
+                # If we're supposed to SORT the BarChart by Frequency ...
+                if self.showBarChart in [1, 3]:
+                    # ... initialize a dictionary to hold and sort the data
+                    sortList = {}
+                    # For each Keyword : Frequency pair ...
+                    for key in keywordCounts.keys():
+                        # ... not the frequency value
+                        count = keywordCounts[key]
+                        # If there's already a key for this frequency (since multiple values can have the same frequency) ...
+                        if sortList.has_key(count):
+                            # ... add the keyword to the items at this frequency
+                            sortList[count].append(key)
+                        # If this frequency is not yet in the sort list ...
+                        else:
+                            # ... add it as a new LIST of keywords that have this same frequency
+                            sortList[count] = [key]
+                    # Isolate the keys (frequencies) for the sort list
+                    keys = sortList.keys()
+                    # Sort the frequencies in reverse (highest to lowest) order
+                    keys.sort(reverse=True)
+                    # For the highest to lowest frequencies ...
+                    for key in keys:
+                        # ... sort the keywords at this frequency alphabetically
+                        sortList[key].sort()
+                        # Now add the frequency and label to the graph's data structures
+                        for label in sortList[key]:
+                            data.append(key)
+                            dataLabels.append(label)
+                        # We can stop after we have 30 values in the list, as this is the max that can be displayed.
+                        if len(data) >= 30:
+                            break
+                # If we're NOT supposed to sort by Frequency, Alphabetic sort like in the Keyword List will do.
+                else:
+                    # We can only display 30 Keywords.  Let's figure out the 30 with the highest frequencies.
+                    # Initialize a list just for frequency counts.
+                    count = []
+                    # Add all the frequencies to the count list
+                    for key in countKeys:
+                        count.append(keywordCounts[key])
+                    # Sort the frequency Count list from highest to lowest
+                    count.sort(reverse=True)
+                    # Select just the top 30 values
+                    count = count[:30]
+                    # For each Keyword : Frequency pair ...
+                    for key in countKeys:
+                        # ... if the freequency is in the top 30 ...
+                        if keywordCounts[key] in count:
+                            # ... add the frequency and keyword to the BarChart data structures
+                            data.append(keywordCounts[key])
+                            dataLabels.append(key) 
+
+                # Create the BarChart graphic (which will be placed in the ClipBoard)
+                self.report.barChartGraphic.plot(self.subtitle, data, dataLabels)
+                
+                # If the Clipboard isn't Open ...
+                if not wx.TheClipboard.IsOpened():
+                    # ... open it!
+                    clip = wx.Clipboard()
+                    clip.Open()
+
+                    # Create an Bitmap Data Object
+                    bitmapObject = wx.BitmapDataObject()
+                    # Get the data from the Clipboard and put it in the Bitmap Data Object
+                    clip.GetData(bitmapObject)
+                    # Convert the Bitmap Data Object into an actual Bitmap
+                    bitmap = bitmapObject.GetBitmap()
+                    # Convert from Bitmap to an Image
+                    image = bitmap.ConvertToImage()
+                    # Add the image to the report.
+                    # (Don't use WriteBitmap(), because Bitmaps are harder to process for RTF.)
+                    reportText.WriteImage(image)
+
+                    # Close the Clipboard
+                    clip.Close()
+
         # Make the control read only, now that it's done
         reportText.SetReadOnly(True)
 
@@ -2892,6 +2979,7 @@ class ReportGenerator(wx.Object):
                                                   showSnapshotImage=self.showSnapshotImage,
                                                   showSnapshotCoding=self.showSnapshotCoding,
                                                   showKeywords=self.showKeywords,
+                                                  showBarChart=self.showBarChart,
                                                   showComments=self.showComments,
                                                   showNestedData=self.showNested,
                                                   showHyperlink=self.showHyperlink,
@@ -2955,6 +3043,7 @@ class ReportGenerator(wx.Object):
                 if keywordFilter:
                     self.keywordFilterList = dlgFilter.GetKeywords()
                     self.showKeywords = dlgFilter.GetShowKeywords()
+                    self.showBarChart = dlgFilter.GetShowBarChart()
                 if clipFilter or snapshotFilter:
                     self.showFile = dlgFilter.GetShowFile()
                     self.showTime = dlgFilter.GetShowTime()
@@ -3007,6 +3096,7 @@ class ReportGenerator(wx.Object):
 ##                                                  showSnapshotImage=self.showSnapshotImage,
 ##                                                  showSnapshotCoding=self.showSnapshotCoding,
                                                   showKeywords=self.showKeywords,
+                                                  showBarChart=self.showBarChart,
                                                   showComments=self.showComments,
                                                   showQuoteNotes=self.showQuoteNotes  ) # ,
 ##                                                  showSnapshotNotes=self.showSnapshotNotes )
@@ -3056,6 +3146,7 @@ class ReportGenerator(wx.Object):
                 if keywordFilter:
                     self.keywordFilterList = dlgFilter.GetKeywords()
                     self.showKeywords = dlgFilter.GetShowKeywords()
+                    self.showBarChart = dlgFilter.GetShowBarChart()
                 if quoteFilter or snapshotFilter:
                     self.showFile = dlgFilter.GetShowFile()
                     self.showTime = dlgFilter.GetShowTime()
@@ -3103,6 +3194,7 @@ class ReportGenerator(wx.Object):
                                                   showSnapshotImage=self.showSnapshotImage,
                                                   showSnapshotCoding=self.showSnapshotCoding,
                                                   showKeywords=self.showKeywords,
+                                                  showBarChart=self.showBarChart,
                                                   showComments=self.showComments,
                                                   showClipNotes=self.showClipNotes,
                                                   showSnapshotNotes=self.showSnapshotNotes )
@@ -3152,6 +3244,7 @@ class ReportGenerator(wx.Object):
                 if keywordFilter:
                     self.keywordFilterList = dlgFilter.GetKeywords()
                     self.showKeywords = dlgFilter.GetShowKeywords()
+                    self.showBarChart = dlgFilter.GetShowBarChart()
                 if clipFilter or snapshotFilter:
                     self.showFile = dlgFilter.GetShowFile()
                     self.showTime = dlgFilter.GetShowTime()
@@ -3194,7 +3287,8 @@ class ReportGenerator(wx.Object):
                                                   showFile=self.showFile,
                                                   showTime=self.showTime,
                                                   showDocImportDate=self.showDocImportDate,
-                                                  showKeywords=self.showKeywords)
+                                                  showKeywords=self.showKeywords,
+                                                  showBarChart=self.showBarChart)
             # Populate the Filter Dialog with the Episode, Document, and Keyword Filter lists
             if episodeFilter:
                 dlgFilter.SetEpisodes(self.filterList)
@@ -3236,6 +3330,7 @@ class ReportGenerator(wx.Object):
                 if keywordFilter:
                     self.keywordFilterList = dlgFilter.GetKeywords()
                     self.showKeywords = dlgFilter.GetShowKeywords()
+                    self.showBarChart = dlgFilter.GetShowBarChart()
                 self.showHyperlink = dlgFilter.GetShowHyperlink()
                 # Remember the configuration name for later reuse
                 self.configName = dlgFilter.configName

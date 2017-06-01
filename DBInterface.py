@@ -3956,6 +3956,44 @@ def list_of_keywords(** kwargs):
     DBCursor.close()
     return kwlist
 
+def dict_of_keyword_colors():
+    """ Get a dictionary of Keyword Colors for all Keyword Group : Keyword pairs """
+    # Initialize a Dictionary
+    d = {}
+    # Define the Query
+    query  = "SELECT KeywordGroup, Keyword, LineColorName, LineColorDef "
+    query += "FROM Keywords2 "
+    query += "ORDER BY KeywordGroup, Keyword"
+    # Get a Database Cursor
+    DBCursor = get_db().cursor()
+    # Execute the Query
+    DBCursor.execute(query)
+    # Iterate through the results
+    for row in fetchall_named(DBCursor):
+        # Get the Keyword Group
+        kwg = row['KeywordGroup']
+        # Get the Keyword
+        kw = row['Keyword']
+        # Get the Color Name
+        colorName = row['LineColorName']
+        # Get the Color Definition
+        colorDef = row['LineColorDef']
+        # If we're using Unicode ...
+        if 'unicode' in wx.PlatformInfo:
+            # ... we need to decode the Keyword Group, Keyword, and Color Name
+            kwg = ProcessDBDataForUTF8Encoding(kwg)
+            kw = ProcessDBDataForUTF8Encoding(kw)
+            colorName = ProcessDBDataForUTF8Encoding(colorName)
+        # If a color is defined ...
+        if colorDef != u'':
+            # Add the results to the Dictionary
+            d[u"%s : %s" % (kwg, kw)] = {'colorName' : colorName,
+                                         'colorDef' :  colorDef  }
+    # Close the database cursor
+    DBCursor.close()
+    # return the dictionary as the function results
+    return d
+
 def list_of_snapshot_detail_keywords(** kwargs):
     """Get a list of all Snapshot Detail keywordgroup/keyword pairs for the specified
     qualifier (Snapshot numbers).  Result is a list of tuples,
