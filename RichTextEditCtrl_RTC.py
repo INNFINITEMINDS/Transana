@@ -531,11 +531,6 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
                         # tmpTextFile.write(formattedText)
                         # tmpTextFile.close()
 
-                    # If the RTF Text ends with a Carriage Return (and it always does!) ...
-##                    if formattedText[-6:] == '\\par\n}':
-                        # ... then remove that carriage return!
-##                        formattedText = formattedText[:-6] + formattedText[-1]
-                        
                     # Prepare the control for data
                     self.Freeze()
                     # Start exception handling
@@ -564,15 +559,23 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
                 wx.TheClipboard.GetData(textDataObject)
                 # Write the plain text into the Rich Text Ctrl
                 self.WriteText(textDataObject.GetText())
+            # See if there's Image data
+            elif wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_BITMAP)):
+                # Create a Bitmap Data Object
+                bitmapDataObject = wx.BitmapDataObject()
+                # Get the Data from the Clipboard
+                wx.TheClipboard.GetData(bitmapDataObject)
+                # Convert the BitmapDataObject into a Bitmap
+                bitmap = bitmapDataObject.GetBitmap()
+                # Convert the bitmap to an image
+                image = bitmap.ConvertToImage()
+                # Write the image into the Rich Text Ctrl
+                self.WriteImage(image)
+
             # End the Batch Undo
             self.EndBatchUndo()
         # Close the Clipboard
         wx.TheClipboard.Close()
-
-##    def SetSavePoint(self):
-
-##        if DEBUG or True:
-##            print "RichTextEditCtrl.SetSavePoint() -- Which does NOTHING!!!!"
 
     def GetSelectionStart(self):
         """ Get the starting point of the current selection, implemented for wxSTC compatibility """
