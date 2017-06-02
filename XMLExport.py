@@ -72,19 +72,36 @@ class XMLExport(Dialogs.GenForm):
         # Create the form's main VERTICAL sizer
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
-        exportTxt  = _("You can export data to Transana-XML format which can only be loaded in Transana, or you \ncan export data to QDA-XML format which can be loaded in some other QDA packages.\n\n")
-        exportTxt += _("Transana-XML allows transfer of all data in the Transana database.  ")
-        exportTxt += _("QDA-XML data exchange\nis likely to exhibit some data loss, which depends heavily on the compatibility of the software\npackage which imports the file.\n\n")
-        exportTxt += _("Please see the Help file for more information.")
+##        exportTxt  = _("You can export data to Transana-XML format which can only be loaded in Transana, or you \ncan export data to QDA-XML format which can be loaded in some other QDA packages.\n\n")
+##        exportTxt += _("Transana-XML allows transfer of all data in the Transana database.  ")
+##        exportTxt += _("QDA-XML data exchange\nis likely to exhibit some data loss, which depends heavily on the compatibility of the software\npackage which imports the file.\n\n")
+##        exportTxt += _("Please see the Help file for more information.")
+
+        exportTxt  = _("Please specify a file name for data export.")
+        
         exportTxtCtrl = wx.StaticText(self.panel, -1, exportTxt)
         mainSizer.Add(exportTxtCtrl, 0, wx.EXPAND | wx.ALL, 5)
         mainSizer.Add((1, 15))
 
         h1 = wx.BoxSizer(wx.HORIZONTAL)
         formatTxtCtrl = wx.StaticText(self.panel, -1, _("Export Format"))
+
+
+
+        formatTxtCtrl.Show(False)
+
+
+        
         h1.Add(formatTxtCtrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.formatCtrl = wx.Choice(self.panel, -1, choices=[_('Transana-XML Format'), _('QDA-XML Format')])
         self.formatCtrl.SetSelection(0)
+
+
+
+        self.formatCtrl.Show(False)
+
+
+        
         self.formatCtrl.Bind(wx.EVT_CHOICE, self.OnFormatSelect)
         h1.Add(self.formatCtrl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         mainSizer.Add(h1, 0, wx.EXPAND)
