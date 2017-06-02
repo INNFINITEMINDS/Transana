@@ -1012,6 +1012,10 @@ class XMLImport(Dialogs.GenForm):
                                                filterData.append((dataRec[0], collNum, dataRec[2]))
                                    # Now re-pickle the filter data
                                    self.FilterFilterData = cPickle.dumps(filterData)
+                               # If the Filter Data Type is None or 'None' ...
+                               if (self.FilterFilterDataType is None) or (self.FilterFilterDataType == 'None'):
+                                   # ... Set it to 0 to prevent errors on some MySQL versions
+                                   self.FilterFilterDataType = 0
                                # Create the query to save the Filter record    
                                query = """ INSERT INTO Filters2
                                                (ReportType, ReportScope, ConfigName, FilterDataType, FilterData)
@@ -1031,7 +1035,9 @@ class XMLImport(Dialogs.GenForm):
                                    dbCursor.execute(query, values)
                        except:
 
-                           if DEBUG or DEBUG_Exceptions:
+                           # If we haven't been told to skip error messages of this type ...
+                           if not skipValue:
+
                                print
                                print sys.exc_info()[0], sys.exc_info()[1]
                                print
@@ -1044,8 +1050,6 @@ class XMLImport(Dialogs.GenForm):
                                print
                                print
 
-                           # If we haven't been told to skip error messages of this type ...
-                           if not skipValue:
                                # If an error arises, for now, let's interrupt the import process.  It may be possible
                                # to eliminate this line later, allowing the import to continue even if there is a problem.
                                contin = False
@@ -1065,6 +1069,19 @@ class XMLImport(Dialogs.GenForm):
                                    msg = msg + '\n\n' + prompt % (currentObj.id)
                                    # So the keyword already exists.  Let's continue the import anyway!  This is a minor issue.
                                    contin = True
+
+                               elif objectType == 'Filter':
+
+                                   print
+                                   print "Filter Record:"
+                                   print query
+                                   print
+                                   for val in values:
+                                       if type(val) in ['str']:
+                                           print '  ', val.encode('utf8')
+                                       else:
+                                           print '  ', val
+                                   print
 
                                elif objectType == 'QuotePosition':
                                    prompt = unicode('for Quote %s.', 'utf8')
