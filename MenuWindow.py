@@ -46,6 +46,8 @@ import Dialogs
 import FileManagement
 # Import Transana Menu Setup
 import MenuSetup
+# Import Transana's Missing Files module
+import MissingFiles
 # import Transana's Notes Browser
 import NotesBrowser
 # import Database Import
@@ -612,6 +614,8 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         wx.EVT_MENU(self, MenuSetup.MENU_TOOLS_NOTESBROWSER, self.OnNotesBrowser)
         # Define handler for Tools > File Management
         wx.EVT_MENU(self, MenuSetup.MENU_TOOLS_FILEMANAGEMENT, self.OnFileManagement)
+        # Define handler for Tools > Fix Missing Files
+        wx.EVT_MENU(self, MenuSetup.MENU_TOOLS_MISSINGFILES, self.OnMissingFiles)
         # Define handler for Tools > Media Conversion
         wx.EVT_MENU(self, MenuSetup.MENU_TOOLS_MEDIACONVERSION, self.OnMediaConversion)
         # Define handler for Tools > Import Database
@@ -1373,9 +1377,17 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         # Destroy the dialog
 #        mediaConv.Destroy()
 
+    def OnMissingFiles(self, event):
+        """ Handler for Tools > Find Missing Files """
+        # Create a Missing Files Dialog
+        mfDlg = MissingFiles.MissingFiles(self, _('Find Missing Files'), self.ControlObject)
+        # Show the Missing Files Dialog modally
+        mfDlg.ShowModal()
+        # Destroy the Missing Files Dialog
+        mfDlg.Destroy()
+
     def OnImportDatabase(self, event):
         """ Import Database """
-
          # If the current database is not empty, we need to tell the user.
         if not DBInterface.IsDatabaseEmpty():
             prompt = _('Your current database is not empty.') + '\n\n' + \
@@ -2255,6 +2267,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         self.menuBar.SetLabelTop(2, _("Too&ls"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_NOTESBROWSER, _("&Notes Browser"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_FILEMANAGEMENT, _("&File Management"))
+        self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_MISSINGFILES, _("Find Missing Files"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_MEDIACONVERSION, _("&Media Conversion"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_IMPORT_DATABASE, _("&Import Data"))
         self.menuBar.toolsmenu.SetLabel(MenuSetup.MENU_TOOLS_EXPORT_DATABASE, _("&Export Data"))

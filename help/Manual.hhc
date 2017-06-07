@@ -221,6 +221,11 @@
            <param name="Local" value="FileManagement.htm">
        </object>
   <li> <object type="text/sitemap">
+           <param name="Name" value="Find Missing Files">
+           <param name="ID" value=425>
+           <param name="Local" value="MissingFiles.htm">
+       </object>
+  <li> <object type="text/sitemap">
            <param name="Name" value="Program Settings">
            <param name="ID" value=430>
            <param name="Local" value="ProgramOptions.htm">

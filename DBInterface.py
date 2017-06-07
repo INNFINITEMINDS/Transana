@@ -4360,6 +4360,39 @@ def VideoFilePaths(filePath, update=False):
     # Return the number of records found or updated.
     return (episodeCount, clipCount)
 
+def list_of_external_files():
+    """ List all file names for external files """
+    # Initialize a list of file names (to check for duplicates)
+    filenames = []
+    # Initialize a list for the query results
+    result = []
+    # Get the Database Connection
+    db = get_db()
+    # Create a Database Cursor
+    dbCursor = db.cursor()
+    # Create a set of queries, one each for Episodes, Episode Additional Files, Clips, Clip Additional Files, and Snapshots
+    queries = [("SELECT MediaFile, EpisodeNum FROM Episodes2 GROUP BY MediaFile", 'Episode'),
+               ("SELECT MediaFile, EpisodeNum FROM AdditionalVids2 WHERE EpisodeNum != 0 GROUP BY MediaFile", 'Episode'),
+               ("SELECT MediaFile, ClipNum FROM Clips2 GROUP BY MediaFile", 'Clip'),
+               ("SELECT MediaFile, ClipNum FROM AdditionalVids2 WHERE ClipNum != 0 GROUP BY MediaFile", 'Clip'),
+               ("SELECT ImageFile, SnapshotNum FROM Snapshots2 GROUP BY ImageFile", 'Snapshot')]
+    # For each of our queries ...
+    for (query, objType) in queries:
+        # ... execute the query ...
+        dbCursor.execute(query)
+        # ... and iterate through the results
+        for (filename, objNum) in dbCursor.fetchall():
+            # if the file name has not already been checked ...
+            if not filename in filenames:
+                # ... add it to the filenames list to indicte is has now been checked ...
+                filenames.append(filename)
+                # ... and add it to the query results
+                result.append((filename, objType, objNum))
+    # Close the Database Cursor
+    dbCursor.close()
+    # Return the list of results
+    return result
+
 def IsDatabaseEmpty():
     """ Returns True if the database is empty, False if there are ANY data records """
     result = True

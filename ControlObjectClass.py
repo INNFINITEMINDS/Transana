@@ -398,12 +398,8 @@ class ControlObject(object):
         else:
             # Clear the interface!
             self.ClearAllWindows(clearAllPanes=True)
-            # We only want to load the File Manager in the Single User version.  It's not the appropriate action
-            # for the multi-user version!
-            if TransanaConstants.singleUserVersion:
-                # Open the File Management Window just as if the Menu Item was selected, which
-                # doesn't cause menu problems on OS X
-                self.MenuWindow.OnFileManagement(None)
+            # Load the Missing Files tool
+            self.MenuWindow.OnMissingFiles(None)
 
         # If we have Text Search Items ...
         if len(textSearchItems) > 0:
@@ -612,16 +608,8 @@ class ControlObject(object):
         else:
             # Remove any tabs in the Data Window beyond the Database Tab
             self.DataWindow.DeleteTabs()
-
-            # We only want to load the File Manager in the Single User version.  It's not the appropriate action
-            # for the multi-user version!
-            if TransanaConstants.singleUserVersion:
-                # Create a File Management Window
-                fileManager = FileManagement.FileManagement(self.MenuWindow, -1, _("Transana File Management"))
-                # Set up, display, and process the File Management Window
-                fileManager.Setup(showModal=True)
-                # Destroy the File Manager window
-                fileManager.Destroy()
+            # Load the Missing Files tool
+            self.MenuWindow.OnMissingFiles(None)
 
             return False
 
@@ -1981,26 +1969,6 @@ class ControlObject(object):
             corresponding Visualization in the Visualization window. """
         # Get the primary file name
         Filename = currentObj.media_filename
-##        # Get the additional files, if any.
-##        additionalFiles = currentObj.additional_media_files
-##        # If we have a Episode ...
-##        if isinstance(currentObj, Episode.Episode):
-##            # Initialize the offset value for an Episode to 0, since the 
-##            offset = 0
-##            # ... the mediaStart is 0 and the mediaLength is the media file length
-##            mediaStart = 0
-##            mediaLength = currentObj.tape_length
-##            # Signal that we have an Episode
-##            imgType = 'Episode'
-##        # If we have a Clip ...
-##        elif isinstance(currentObj, Clip.Clip):
-##            # Initialize the offset value for a Clip to the Clip's offset value
-##            offset = currentObj.offset
-##            # ... the mediaStart is the clip start and the mediaLength is the clip stop - clip start
-##            mediaStart = currentObj.clip_start
-##            mediaLength = currentObj.clip_stop - currentObj.clip_start
-##            # Signal that we have a Clip
-##            imgType = 'Clip'
         # See if the primary media file exists
         success = os.path.exists(Filename)
         # If the primary file exists ...
@@ -2015,13 +1983,8 @@ class ControlObject(object):
                     break
         # If one or more of the Media Files doesn't exist, display an error message.
         if not success:
-            # We need a different message for single-user and multi-user Transana if the video file cannot be found.
-            if TransanaConstants.singleUserVersion:
-                # If it does not exist, display an error message Dialog
-                prompt = unicode(_('Media File "%s" cannot be found.\nPlease locate this media file and press the "Update Database" button.\nThen reload the Transcript or Clip that failed.'), 'utf8')
-            else:
-                # If it does not exist, display an error message Dialog
-                prompt = unicode(_('Media File "%s" cannot be found.\nPlease make sure your video root directory is set correctly, and that the video file exists in the correct location.\nThen reload the Transcript or Clip that failed.'), 'utf8')
+            # If the Media File does not exist, display an error message Dialog
+            prompt = unicode(_('Media File "%s" cannot be found.\nTransana will load the "Find Missing Files" tool, where you can locate and update this media file record.\nThen reload the Transcript or Clip that failed.'), 'utf8')
             dlg = Dialogs.ErrorDialog(self.MenuWindow, prompt % Filename)
             dlg.ShowModal()
             dlg.Destroy()
@@ -2031,9 +1994,6 @@ class ControlObject(object):
             # and thus unavailable for wceraudio DLL/Shared Library for audio extraction (in theory).
             # Set the Visualization Window's Visualization Object
             self.VisualizationWindow.SetVisualizationObject(currentObj)
-
-##            # Load the waveform for the appropriate media files with its current start and length.
-##            self.VisualizationWindow.load_image(imgType, Filename, additionalFiles, offset, mediaStart, mediaLength)
 
             # Now that the Visualization is done, load the video in the Video Window
             self.VideoFilename = Filename                # Remember the Video File Name
@@ -2045,12 +2005,9 @@ class ControlObject(object):
 
     def ClearVisualization(self):
         """ Clear the current selection from the Visualization Window """
-
         # Clear the currently loaded object, as there is none
         self.currentObj = None
         self.VisualizationWindow.ClearVisualization()
-
-#        self.VisualizationWindow.OnIdle(None)
 
     def ClearMediaWindow(self):
         """ Clear the media window """

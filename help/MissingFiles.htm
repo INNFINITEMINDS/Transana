@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+<TITLE>Find Missing Files</TITLE>
+</HEAD>
+
+<BODY>
+
+<H1>Find Missing Files</H1><HR>
+
+Transana keeps most of the data you generate in its database, but there are a couple of exceptions.  When you create an Episode, Transana stores a link to the media file, and when you create a Snapshot, Transana stores a link to the image file.  The reason for this is that these files can be quite large, and these files don't change during the analytic process.  Storing links to the files is much faster and more efficient than importing such large files into the database.<P>
+
+A consequence of this, however, is that if any of these files are moved or renamed after you bring them into Transana, or if you change your media library directory, Transana will not be able to load the file when it needs to.  You will get an error message saying that the file cannot be found.<P>
+
+To resolve this issue, Transana has a tool called "Find Missing Files" which pops up automatically when a file cannot be found.  It is also available in the Tools menu.  This tool will list all files in the Transana database that cannot be found in their expected location, the place they were the last time you used them.<P>
+
+<CENTER><IMG SRC="images/missingfiles.gif"  ALT="splash"   BORDER=0></CENTER><P>
+
+You can select one or more files from this list and try to find their actual location by pressing the <B>Search For File(s)</B> button.  Transana will use the Starting Directory specified above, which defaults to your Media Library directory.  If Transana cannot find the file, you may wish to change the Starting Direcory to broaden your search and try again.  (Please note that if you changed the file's name rather than moving it to a different directory, Transana will not be able to find the file.)<P>
+
+If the file's new location can be identified, you have three choices:<P>
+
+You can use the file in its new location by pressing the <B>Use Actual Location</B> button.  Transana will change all references in the database for this file to the new location.  Please be aware that this process may take some time to complete when you have an Episode with many Clips.<P>
+
+You can copy the file from its actual location to the expected location by pressing the <B>Copy File</B> button.  This will leave you with two copies of the file, using extra disk space.  (Video files can be quite large.)<P>
+
+You can move the file from its actual location to the expected location by pressing the <B>Move File</B> button.  This will move the file back to where it used to be.<P>
+
+If you changed the name of a file, select it from the list and press the <B>Change File Name</B> button.  You will be prompted to select the file under its new name.  Please be careful making this selection, as making an incorrect seletion here can be difficult to untangle if the incorrect file you select is used elsewhere in your database.<P>
+
+If you are using the Multiuser version of Transana, please note that the choice you make here will affect others who share your database.  Fixing the connection to the file for you may break the connection to the file for other users if they use a different copy of the media library that was not changed the way your copy was.  The best appoach to resolving this problem depends on the contents of the differing media libraries.<P>   
+
+ 
+
+<P><A HREF="filemanagement.htm"><IMG SRC="images/previouspage.gif"  ALT="previouspage"   BORDER=0></A>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<A HREF="programoptions.htm"><IMG SRC="images/nextpage.gif"  ALT="nextpage"   BORDER=0></A></P>
+
+</BODY>
+</HTML>
