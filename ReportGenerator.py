@@ -36,6 +36,8 @@ import xml.sax
 import wx
 # import wxPython's Rich Text Ctrl module
 import wx.richtext as richtext
+# Import Transana's BarChart Module
+import BarChartGraphic
 # Import Transana's Clip object
 import Clip
 # import Transana's Collection Object
@@ -2845,6 +2847,8 @@ class ReportGenerator(wx.Object):
 
             # If we should show the BarChart ...
             if (self.showBarChart in [0, 1]) and (len(keywordCounts) > 0):
+                # Add blank line for space
+                reportText.WriteText('\n\n')
                 # ... initialize the data and dataLabels lists
                 data = []
                 dataLabels = []
@@ -2901,28 +2905,11 @@ class ReportGenerator(wx.Object):
                             dataLabels.append(key) 
 
                 # Create the BarChart graphic (which will be placed in the ClipBoard)
-                self.report.barChartGraphic.plot(self.subtitle, data, dataLabels)
-                
-                # If the Clipboard isn't Open ...
-                if not wx.TheClipboard.IsOpened():
-                    # ... open it!
-                    clip = wx.Clipboard()
-                    clip.Open()
-
-                    # Create an Bitmap Data Object
-                    bitmapObject = wx.BitmapDataObject()
-                    # Get the data from the Clipboard and put it in the Bitmap Data Object
-                    clip.GetData(bitmapObject)
-                    # Convert the Bitmap Data Object into an actual Bitmap
-                    bitmap = bitmapObject.GetBitmap()
-                    # Convert from Bitmap to an Image
-                    image = bitmap.ConvertToImage()
-                    # Add the image to the report.
-                    # (Don't use WriteBitmap(), because Bitmaps are harder to process for RTF.)
-                    reportText.WriteImage(image)
-
-                    # Close the Clipboard
-                    clip.Close()
+                barChartBmp = BarChartGraphic.BarChartGraphic(self.subtitle, data, dataLabels).GetBitmap()
+                # Add the Bitmap to the Report
+                reportText.WriteImage(barChartBmp.ConvertToImage())
+                # Add some whitespace
+                reportText.WriteText('\n\n')
 
         # Make the control read only, now that it's done
         reportText.SetReadOnly(True)

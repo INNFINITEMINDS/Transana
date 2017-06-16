@@ -14,7 +14,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
-"""This module creates bar chart graphics and places them in the Clipboard for use in Reports. """
+"""This module creates a bar chart graphic and makes the bitmap available. """
 
 __author__ = 'David K. Woods <dwoods@transana.com>'
 
@@ -28,40 +28,125 @@ else:
     # import Transana's Database Interface
     import DBInterface
 
-# Import MatPlotLib's wxAgg infrastructure
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-# Import mapPlotLib's PyPlot functionality
-import matplotlib.pyplot as plt
 
-
-class BarChartGraphic(wx.Panel):
-    """ This module accepts data, creates a BarChart from it, and places that BarChart in the CLipboard. """
-    def __init__(self, parent, pos=(10, 10)):
-        """ Initialize a panel for drawing the BarChart.  This panel can be hidden. """
-        # Initialize a Panel
-        wx.Panel.__init__(self, parent, pos=pos)
-        # Create a PyPlot figure
-        self.figure = plt.figure(figsize=(7, 9))
-        # Create a MatPlotLib FigureCanvas based on the Panel and the Figure
-        self.canvas = FigureCanvas(self, -1, self.figure)
-     
-    def plot(self, title, data, dataLabels):
+class BarChartGraphic(object):
+    """ This module accepts data, creates a BarChart from it, and returns a wx.Bitmap. """
+    def __init__(self, title, data, dataLabels, size=(800, 700)):
         """ Create a BarChart.
                title        Title for the BarChart
                data         List of data values for the BarChart
                dataLabels   Matching list of data labels for the BarChart
-            This module limits the BarChart to 15 bars max. """
-        # Clear the Figure (in case we use the same BarChartGraphic to create multiple BarCharts)
-        self.figure.clf()
+            This module sizes the bitmap for a printed page by default. """
+
+        def barXPos(x):
+            """ Calculate the horizontal center for each bar in pixels """
+            # numBars, barChartLeft, and barChartWidth are constants in the calling routine
+            # Calculate the width of each bar
+            barWidth = barChartWidth / numBars
+            # Calculate the position of each bar
+            barXPos = (float(x) / numBars) * barChartWidth + barWidth / 2 + barChartLeft
+            # Return the bar center position
+            return barXPos
+
+        def barHeight(x):
+            """ Calculate the height of each bar in pixels """
+            # data and barChartHeight are constants in the calling routine
+            # Determine the size of the largest bar
+            barMax = max(data)
+            # Calculate the height of the bar value passed in
+            barHeight = float(x) / barMax * barChartHeight
+            # We return 95% of the height value to give the bar chart some white space at the top.
+            return int(barHeight * 0.95)
+
+        def verticalAxisValues(maxVal):
+            """ Given the maximum value of the axis, determine what values should appear as axis labels.
+                This method implements the 2-5-10 rule. """
+            # Initialize a list of values to return
+            values = []
+
+            # Let's normalize the data as part of assigning axis labels
+            # Initilaize the increment between axis label values
+            increment = 1
+            # Initialize the conversion factor for axis labels, used in handling large values
+            convertFactor = 1
+            # While our maxValue is over 100 ...
+            while maxVal > 100:
+                # ... reduce the maximum value by a factor of 10 ...
+                maxVal /= 10
+                # ... and increase our conversion factor by a factor of 10.
+                convertFactor *= 10
+            # If our normalized max value is over 50 ...
+            if maxVal > 50:
+                # ... increments of 10 will give us between 5 and 10 labels
+                increment = 10
+            # If our normalized max value is between 20 and 50 ...
+            elif maxVal > 20:
+                # ... increments of 5 will give us between 4 and 10 labels
+                increment = 5
+            # If our normalized max value is between 8 and 20 ...
+            elif maxVal > 8:
+                # ... increments of 2 will give us between 4 and 10 labels
+                increment = 2
+            # If our normalized max value is 8 or less ...
+            else:
+                # ... increments of 1 will five us between 1 and 8 labels.
+                increment = 1
+
+            # for values between 0 and our max value (plus 1 to include the mac value if a multiple of 10) space by increment ...
+            for x in range(0, maxVal + 1, increment):
+                # ... add the incremental value multiplied by the conversion factor to our list of axis labels
+                values.append(x * convertFactor)
+            # Return the list of axis labels
+            return values
+            
+        # Get the Graphic Dimensions
+        (imgWidth, imgHeight) = size
+
+        # Create an empty bitmap
+        self.bitmap = wx.EmptyBitmap(imgWidth, imgHeight)
+        # Get the Device Context for that bitmap
+        self.dc = wx.BufferedDC(None, self.bitmap)
+     
         # The length of data is the number of bars we need
         numBars = len(data)
+
+        # Determine the longest bar label
+        # Define the label font size
+        axisLabelFontSize = 11
+        # Define a Font for axis labels
+        font = wx.Font(axisLabelFontSize, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False)
+        # Set the Font for the DC
+        self.dc.SetFont(font)
+        # Initize the max width variable
+        maxWidth = 0
+        # For each bar label ...
+        for x in range(numBars):
+            # ... determine the size of the label
+            (txtWidth, txtHeight) = self.dc.GetTextExtent(dataLabels[x])
+            # See if it's bigger than previous labels
+            maxWidth = max(txtWidth, maxWidth)
+
+        # Give a left margin of 70 pixels for the vertical axis labels
+        barChartLeft = 70
+        # The width of the bar chart will be the image width less the left margin and 25 pixels for right margin
+        barChartWidth = imgWidth - barChartLeft - 25
+        # Give a top margin of 50 pixels to have room for the chart title
+        if title != '':
+            barChartTop = 50
+        # or 20 pixels if there is no title
+        else:
+            barChartTop = 20
+        # Reserve almost HALF the image for bar labels.  (Transana uses LONG labels!)
+        barChartHeight = max(imgHeight / 2, imgHeight - maxWidth - barChartTop - 30)
+        
+        # Initialize a colorIndex to track what color to assign each bar
+        colorIndx = 0
         # Define the colors to be used in the BarChart
         # If we're running stand-alone ...
         if __name__ == '__main__':
             # ... use generic colors
             colors = ['#FF0000', '#00FF00', '#0000FF', '#666600', '#FF00FF', '#00FFFF', '#440000', '#004400', '#000044']
-#            colors = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (0.5, 0.5, 0), (1, 0, 1), (0, 1, 1)]
-            # There are no Colors for Keywords when running stand-alone
+            # There are no defined Colors for Keywords when running stand-alone
             colorsForKeywords = {}
         # If we're running inside Transana ...
         else:
@@ -71,50 +156,61 @@ class BarChartGraphic(wx.Panel):
             colorList = TransanaGlobal.getColorDefs(TransanaGlobal.configData.colorConfigFilename)[:-1]
             # Initialize the Colors list
             colors = []
-            # Populate the colors list.
+            # Populate the colors list from Transana's defined colors
             for colorName, colorDef in colorList:
-                # MatPlotLib uses a 0 .. 1 scale rather than a 0 .. 255 scale for RGB colors!
-                colors.append((colorDef[0]/255.0, colorDef[1]/255.0, colorDef[2]/255.0))
-            # Get the color definitions for all keywords in Transana
+                colors.append(colorDef)
+            # Get the color definitions for all keywords in Transana with defined colors
             colorsForKeywords = DBInterface.dict_of_keyword_colors()
 
-        # If we have more data points that will fit, we should truncate the number of bars
-        maxBars = 30
-        if numBars > maxBars:
-            # Reduce data to the first 15 points
-            data = data[:maxBars]
-            # Reduce the data labels to the first 15 labels
-            dataLabels = dataLabels[:maxBars]
-            # Reduce the number of bars to be displayed to maxBars
-            numBars = maxBars
-        # X values for the bars are simple integers for bar number
-        xValues = range(numBars)
-        # Set the bar width to allow space between bars
-        width = .85 
+        # Define a white brush as the DC Background
+        self.dc.SetBackground(wx.Brush((255, 255, 255)))
+        # Clear the Image (uses the Brush)
+        self.dc.Clear()
 
-        # Create a MatPlotLib SubPlot
-        ax = self.figure.add_subplot(111)
-        # Define the BarChart Bars in the figure
-        rects1 = ax.bar(xValues, data, width)
+        # Draw a border around the whole bitmap
+        # Set the DC Pen
+        self.dc.SetPen(wx.Pen((0, 0, 0), 2, wx.SOLID))
+        # Draw an outline around the whole graphic
+        self.dc.DrawRectangle(1, 1, imgWidth - 1, imgHeight - 1)
 
-        # Add the Chart Title
-        ax.set_title(title)
-        # If we're running stand-alone ...
-        if __name__ == '__main__':
-            # Add the Y axis label
-            ax.set_ylabel('Frequency')
-        else:
-            # Add the Y axis label
-            ax.set_ylabel(_('Frequency'))
-        # Set X axis tick marks for each bar
-        ax.set_xticks(xValues)
-        # Add the bar labels
-        lbls = ax.set_xticklabels(dataLabels, rotation=90)  # 35  65
+        # Place the Title on the DC
+        # Define a Font
+        font = wx.Font(18, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False)
+        # Set the Font for the DC
+        self.dc.SetFont(font)
+        # Set the Text Foreground Color to Black
+        self.dc.SetTextForeground(wx.Colour(0, 0, 0))
+        # Determine the size of the title text
+        (titleWidth, titleHeight) = self.dc.GetTextExtent(title)
+        # Add the Title to the Memory DC (and therefore the bitmap)
+        self.dc.DrawText(title, imgWidth / 2 - titleWidth / 2, 10)
 
-        # Initialize the color list position indicator
-        colorIndx = 0
-        # For each bar ...
+        # Define a Font for axis labels
+        font = wx.Font(axisLabelFontSize, wx.FONTFAMILY_DEFAULT, wx.NORMAL, wx.NORMAL, False)
+        # Set the Font for the DC
+        self.dc.SetFont(font)
+
+        # Draw Axes
+        # Draw an outline around the Bar Chart area with just a little extra width so it looks better
+        self.dc.DrawRectangle(barChartLeft - 3, barChartTop, barChartWidth + 6, barChartHeight)
+        # Get the values that should be used for the vertical axis labels
+        axisValues = verticalAxisValues(max(data))
+        # For each axis label ...
+        for x in axisValues:
+            # ... draw a pip at the value
+            self.dc.DrawLine(barChartLeft - 8, barChartTop + barChartHeight - barHeight(x) - 1, barChartLeft - 3, barChartTop + barChartHeight - barHeight(x) - 1)
+            # Convert the axis value to right-justified text
+            axisLbl = "%10d" % x
+            # Determine the size of the axis label
+            (txtWidth, txtHeight) = self.dc.GetTextExtent(axisLbl)
+            # Add the text to the drawing at just the right position
+            self.dc.DrawText(axisLbl, barChartLeft - txtWidth - 13, barChartTop + barChartHeight - barHeight(x) - txtHeight / 2)
+
+        # For each bar in the bar chart ...
         for x in range(numBars):
+            # ... draw the pips for the bar labels
+            self.dc.DrawLine(barXPos(x), barChartTop + barChartHeight, barXPos(x), barChartTop + barChartHeight + 3)
+            
             # If there's a color defined for the Keyword ...
             if dataLabels[x] in colorsForKeywords.keys():
                 # ... use that color
@@ -128,18 +224,28 @@ class BarChartGraphic(wx.Panel):
                     colorIndx = 0
                 else:
                     colorIndx += 1
-            # ... define the bar color
-            rects1[x].set_color(color)
-            # ... make the label color match the bar color
-            lbls[x].set_color(color)
-        # Give the graph small inside margins
-        plt.margins(0.05)
-        # Adjust the bottom margin to make room for bar labels
-        plt.subplots_adjust(bottom=0.5)  # 0.2  0.4
-        # Draw the BarChart
-        self.canvas.draw()
-        # Copy the BarChart to the Clipboard
-        self.canvas.Copy_to_Clipboard()
+
+            # Label the bars
+            # Set the Text Foreground Color
+            self.dc.SetTextForeground(color)
+            # Get the size of the bar label
+            (txtWidth, txtHeight) = self.dc.GetTextExtent(dataLabels[x])
+            # Add the bar label to the bar chart
+            self.dc.DrawRotatedText(dataLabels[x], barXPos(x) + (txtHeight / 2), barChartTop + barChartHeight + 10, 270)
+            # Calculate bar width as 80% of the width a bar would be with no whitespace between bars
+            barWidth = float(barChartWidth) / numBars * 0.8
+            # Set the Brush color to the color to be used for the bar
+            self.dc.SetBrush(wx.Brush(color))
+            # Draw the actual bar.  3 extra points compensates for the line thickness.
+            self.dc.DrawRectangle(barXPos(x) - barWidth / 2 + 1,
+                                  barChartTop + barChartHeight - barHeight(data[x]) - 3,
+                                  barWidth,
+                                  barHeight(data[x]) + 3)
+
+    def GetBitmap(self):
+        """ Provide the Bitmap to the calling routine """
+        # Return the Bitmap object as applied 
+        return self.bitmap
 
 
 if __name__ == '__main__':
@@ -147,9 +253,6 @@ if __name__ == '__main__':
         def __init__(self,parent,title):
             wx.Frame.__init__(self,parent,title=title,size=(1300,1000))
              
-            # Placed up front so other screen elementes will be placed OVER it!
-            self.barChartGraphic = BarChartGraphic(self)  # DON'T PUT THIS IN THE SIZER -- It needs to be hidden!
-
             # Create a Sizer
             s1 = wx.BoxSizer(wx.HORIZONTAL)
             # Add a RichTextCtrl
@@ -171,66 +274,22 @@ if __name__ == '__main__':
                           'Long Label 8', 'Long Label 9', 'Long Label 10', 'Long Label 11', 'Long Label 12', 'Long Label 13', 'Long Label 14',
                           'Long Label 15', '16']
 
-            # Draw the BarChart.  This places the graphic in the Clipboard.
-            self.barChartGraphic.plot(title, data, dataLabels)
 
-            # If the Clipboard isn't Open ...
-            if not wx.TheClipboard.IsOpened():
-                # ... open it!
-                clip = wx.Clipboard()
-                clip.Open()
+            # Draw the BarChart.  This places the graphic in the Report.
+            bc1 = BarChartGraphic(title, data, dataLabels)
+            bitmap1 = bc1.GetBitmap()
+            self.txt.WriteImage(bitmap1.ConvertToImage())
 
-                # Create an Image Data Object
-                bitmapObject = wx.BitmapDataObject()
-                # Get the Data from the Clipboard
-                clip.GetData(bitmapObject)
-                # Convert the BitmapsDataObject to a Bitmap
-                bitmap = bitmapObject.GetBitmap()
-                # Convert the Bitmap to an Image
-                image = bitmap.ConvertToImage()
-
-                # Write the plain text into the Rich Text Ctrl
-                # self.txt.WriteBitmap(bitmap, wx.BITMAP_TYPE_BMP) BAD FOR RTF
-                self.txt.WriteImage(image)
-
-                self.txt.AppendText('Bitmap Added!!\n\n')
-
-                # Close the Clipboard
-                clip.Close()
 
             # Draw a second BarChart
             # Prepare some fake data for a demonstration graph
-            title = 'Keyword Frequency'
+            title = ''
             data = [25, 22, 20, 18, 15]
             dataLabels = ['Long Label 4', 'Long Label 5', 'Long Label 6', 'Long Label 7',
                           'Long Label 8']
-            self.barChartGraphic.plot(title, data, dataLabels)
-
-            self.barChartGraphic.canvas.Copy_to_Clipboard()
-
-            # If the Clipboard isn't Open ...
-            if not wx.TheClipboard.IsOpened():
-                # ... open it!
-                clip = wx.Clipboard()
-                clip.Open()
-
-                # Create an Image Data Object
-                bitmapObject = wx.BitmapDataObject()
-                # Get the Data from the Clipboard
-                clip.GetData(bitmapObject)
-                # Convert the BitmapsDataObject to a Bitmap
-                bitmap = bitmapObject.GetBitmap()
-                # Convert the Bitmap to an Image
-                image = bitmap.ConvertToImage()
-
-                # Write the plain text into the Rich Text Ctrl
-                # self.txt.WriteBitmap(bitmap, wx.BITMAP_TYPE_BMP) BAD FOR RTF
-                self.txt.WriteImage(image)
-
-                self.txt.AppendText('Bitmap Added!!\n\n')
-
-                # Close the Clipboard
-                clip.Close()
+            bc1 = BarChartGraphic(title, data, dataLabels)
+            bitmap1 = bc1.GetBitmap()
+            self.txt.WriteImage(bitmap1.ConvertToImage())
 
 
     # Initialize the App when in stand-alone mode

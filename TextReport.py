@@ -57,8 +57,6 @@ if __name__ == '__main__':
 import Dialogs
 # Import Transana's Filter Dialog
 import FilterDialog
-# Import Transana's BarChart Module
-import BarChartGraphic
 # import Transana Miscellaneous functions
 import Misc
 # Import Transana's Constants
@@ -288,9 +286,6 @@ class TextReport(wx.Frame):
 
         # Add a Status Bar
         self.CreateStatusBar()
-
-        # Placed up front so other screen elementes will be placed OVER it!  NOT in the Sizer.
-        self.barChartGraphic = BarChartGraphic.BarChartGraphic(self)
 
         # Create a Sizer
         s1 = wx.BoxSizer(wx.HORIZONTAL)
