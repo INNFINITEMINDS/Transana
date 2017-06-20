@@ -1126,11 +1126,11 @@ class MediaConvert(wx.Dialog):
                 if self.vidFrameRate > 0.0:
                     # HD video with high frame rates (eg. 59.96 fps) don't play smoothly.
                     # Frame Rate reduction causes problems if set to "29.97" or "30", but is okay at "29"
-                    if self.vidFrameRate > 30:
-                        # Let's max the Frame Rate out at 29 fps.
+                    if (self.vidFrameRate < 29) or (self.vidFrameRate > 30):
+                        # Let's max the Frame Rate out at 30 fps.
                         FFmpegCommand += ' "-r" "29"'
                         # Let's inform the user we changed their frame rate!
-                        self.memo.AppendText("\n" + _("Frame Rate reduced from %0.2f fps to 29 fps.") % self.vidFrameRate)
+                        self.memo.AppendText("\n" + _("Frame Rate adjusted from %0.2f fps to 29 fps." + '\n\n') % self.vidFrameRate)
                     # Otherwise ...
                     else:
                         # ... use the existing frame rate
