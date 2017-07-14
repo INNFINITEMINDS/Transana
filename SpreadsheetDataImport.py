@@ -1080,15 +1080,22 @@ class SpreadsheetDataImport(wiz.Wizard):
                                 keyword.keywordGroup = kwg
                                 keyword.keyword = kw
                                 keyword.definition = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
-                                # Try to save the Keyword
-                                keyword.db_save()
-                                # Add the new Keyword to the database tree
-                                self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
+                                try:
+                                    # Try to save the Keyword
+                                    keyword.db_save()
+                                    # Add the new Keyword to the database tree
+                                    self.treeCtrl.add_Node('KeywordNode', (_('Keywords'), keyword.keywordGroup, keyword.keyword), 0, keyword.keywordGroup)
 
-                                # Now let's communicate with other Transana instances if we're in Multi-user mode
-                                if not TransanaConstants.singleUserVersion:
-                                    if TransanaGlobal.chatWindow != None:
-                                        TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
+                                    # Now let's communicate with other Transana instances if we're in Multi-user mode
+                                    if not TransanaConstants.singleUserVersion:
+                                        if TransanaGlobal.chatWindow != None:
+                                            TransanaGlobal.chatWindow.SendMessage("AK %s >|< %s" % (keyword.keywordGroup, keyword.keyword))
+                                except:
+                                    if TransanaConstants.demoVersion:
+                                        prompt = unicode(_('Problem saving Keyword %s.  The Demo version limits the number of Keywords you may create.'), 'utf8')
+                                        errorDlg = Dialogs.ErrorDialog(self, prompt % keyword.keyword)
+                                        errorDlg.ShowModal()
+                                        errorDlg.Destroy()
 
             # Prepare for a SaveError, just in case.  (The "finally" clause makes this necessary.)
             saveError = False
@@ -1098,7 +1105,10 @@ class SpreadsheetDataImport(wiz.Wizard):
             # If there is a SaveError (duplicate name is most likely) ...
             except TransanaExceptions.SaveError:
                 # Report the error to the user
-                prompt = unicode(_('Problem saving Document %s.  Try using an empty Collection.'), 'utf8')
+                if TransanaConstants.demoVersion:
+                    prompt = unicode(_('Problem saving Document %s.  The Demo version limits the number of Documents you may create.'), 'utf8')
+                else:
+                    prompt = unicode(_('Problem saving Document %s.  Try using an empty Collection.'), 'utf8')
                 errorDlg = Dialogs.ErrorDialog(self, prompt % participantID)
                 errorDlg.ShowModal()
                 errorDlg.Destroy()
@@ -1169,7 +1179,10 @@ class SpreadsheetDataImport(wiz.Wizard):
                             # Save the Quote
                             quote.db_save()
                         except TransanaExceptions.SaveError:
-                            prompt = unicode(_('Problem saving Question %s for %s.'), 'utf8')
+                            if TransanaConstants.demoVersion:
+                                prompt = unicode(_('Problem saving Quote %s for %s.  The Demo version limits the number of Quotes you may create.'), 'utf8')
+                            else:
+                                prompt = unicode(_('Problem saving Question %s for %s.'), 'utf8')
                             errorDlg = Dialogs.ErrorDialog(self, prompt % (quoteNum, participantID))
                             errorDlg.ShowModal()
                             errorDlg.Destroy()
