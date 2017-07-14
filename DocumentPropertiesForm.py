@@ -573,10 +573,22 @@ class DocumentPropertiesForm(Dialogs.GenForm):
                                 self.obj.text = self.hiddenRTC.GetFormattedSelection('XML')
                                 # Get the Plain Text while we're at it.
                                 self.obj.plaintext = self.hiddenRTC.GetPlainTextSelection()
+                            else:
+
+                                message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                
+                                dlg = Dialogs.ErrorDialog(self, message % self.obj.imported_file)
+                                dlg.ShowModal()
+                                dlg.Destroy()
+
                         # If exceptions are raised ...
                         except:
                             
-                            print "Problem reading XML file"
+                            message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                            
+                            dlg = Dialogs.ErrorDialog(self, message % self.obj.imported_file)
+                            dlg.ShowModal()
+                            dlg.Destroy()
 
                             # Clear out the object.
                             self.obj = None
@@ -600,7 +612,11 @@ class DocumentPropertiesForm(Dialogs.GenForm):
                         # If exceptions are raised ...
                         except:
                             
-                            print "Problem reading TXT file"
+                            message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                            
+                            dlg = Dialogs.ErrorDialog(self, message % self.obj.imported_file)
+                            dlg.ShowModal()
+                            dlg.Destroy()
 
                             # Clear out the object.
                             self.obj = None
@@ -611,8 +627,11 @@ class DocumentPropertiesForm(Dialogs.GenForm):
 
                     else:
 
-                        print "UNKNOWN FILE TYPE based on file extension:", self.obj.imported_file
-                        print
+                        message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                        
+                        dlg = Dialogs.ErrorDialog(self, message % self.obj.imported_file)
+                        dlg.ShowModal()
+                        dlg.Destroy()
 
                         # Clear out the object.
                         self.obj = None

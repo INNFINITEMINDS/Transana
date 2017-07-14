@@ -53,9 +53,9 @@ if workshopVersion:
     expirationdate = TransanaConfigConstants.xpdt
 
 # Program Version Number
-versionNumber = '3.10'
+versionNumber = '3.11a5'
 # Build Number
-buildNumber = '310'
+buildNumber = '311a5'
 # Modify for Multi-user if appropriate
 if not singleUserVersion:
     versionNumber = versionNumber + '-MU'
@@ -147,7 +147,8 @@ fileTypesList = [_("All files (*.*)"),
                  _("Windows Media Audio files (*.wma)"),
                  _("AAC files (*.aac)"),
                  _("QuickTime Audio files (*.m4a)"),
-                 _("Transcript Formats (*.rtf, *.xml, *.txt)"), 
+                 _("Transcript Formats (*.docx, *.rtf, *.xml, *.txt)"),
+                 _("Word Document Format (*.docx)"),
                  _("Rich Text Format files (*.rtf)"),
                  _("XML Format files (*.xml)"),
                  _("Plain Text Format files (*.txt)"),
@@ -170,7 +171,8 @@ fileTypesList_RtL = [_("All files (*.*)"),
                      _("WAV files (*.wav)"),
                      _("Windows Media Audio files (*.wma)"),
                      _("AAC files (*.aac)"),
-                     _("Transcript Formats (*.rtf, *.xml, *.txt)"), 
+                     _("Transcript Formats (*.docx, *.rtf, *.xml, *.txt)"),
+                     _("Word Document Format (*.docx)"),
                      _("Rich Text Format files (*.rtf)"),
                      _("XML Format files (*.xml)"),
                      _("Plain Text Format files (*.txt)"),
@@ -182,8 +184,8 @@ mediaFileTypes_RtL = ['mpg', 'mpeg', 'avi', 'wmv', 'mp3', 'wav', 'wma', 'aac']
 imageFileTypesString = _("""All files (*.*)|*.*|All supported graphics files (*.ani, *.bmp, *.cur, *.gif, *.ico, *.iff, *.jpg, *.jpeg, *.pcx, *.png, *.pnm, *.tga, *.tif, *.xpm)|*.ani;*.bmp;*.cur;*.gif;*.ico;*.iff;*.jpg;*.jpeg;*.pcx;*.png;*.pnm;*.tga;*.tif;*.xpm""")
 imageFileTypes = ['ani', 'bmp', 'cur', 'gif', 'ico', 'iff', 'jpg', 'jpeg', 'pcx', 'png', 'pnm', 'tga', 'tif', 'xpm']
 
-documentFileTypesString = _("""All files (*.*)|*.*|All supported text files (*.rtf, *.xml, *.txt)|*.rtf;*.xml;*.txt;|Rich Text Files (*.rtf)|*.rtf|Transana XML Files (*.xml)|*.xml|Plain Text Files (*.txt)|*.txt""")
-documentFileTypes = ['rtf', 'xml', 'txt']
+documentFileTypesString = _("""All files (*.*)|*.*|All supported text files (*.docx, *.rtf, *.xml, *.txt)|*.docx;*.rtf;*.xml;*.txt;|Word Document Files (*.docx)|*.docx|Rich Text Files (*.rtf)|*.rtf|Transana XML Files (*.xml)|*.xml|Plain Text Files (*.txt)|*.txt""")
+documentFileTypes = ['docx', 'rtf', 'xml', 'txt']
 
 # We need to know what characters are legal in a file name!
 legalFilenameCharacters = string.ascii_letters + string.digits + ":. -_$&@!%(){}[]~'#^+=/" 

@@ -22,59 +22,64 @@ if DEBUG:
     print "DatabaseTreeTab DEBUG is ON!!"
 
 import wx
+
 import TransanaConstants
-import TransanaGlobal
-import TransanaImages
-import Library
-import LibraryPropertiesForm
-import Document
-import Episode
-import EpisodePropertiesForm
-import Transcript
-import TranscriptPropertiesForm
+import AnalyticDataExport
+import BatchFileProcessor
+import Clip
+import ClipKeywordObject
+import ClipPropertiesForm
 import Collection
 import CollectionPropertiesForm
-import Quote
-import Clip
-import Snapshot
-import ClipPropertiesForm
-if TransanaConstants.proVersion:
-    import DocumentPropertiesForm
-    import QuotePropertiesForm
-    import SnapshotPropertiesForm
-import Note
-import NotePropertiesForm
-import NotesBrowser
-import KeywordObject as Keyword                      
-import KeywordPropertiesForm
-import ClipKeywordObject
-import SpreadsheetDataImport
-import BatchFileProcessor
-import ProcessSearch
-from TransanaExceptions import *
-import KWManager
-import exceptions
 import DBInterface
 import Dialogs
+import Document
+if TransanaConstants.proVersion:
+    import DocumentPropertiesForm
+import DragAndDropObjects           # Implements Drag and Drop logic and objects
+import Episode
+import EpisodePropertiesForm
+import KeywordMapClass
+import KeywordObject as Keyword                      
+import KeywordPropertiesForm
+import KeywordSummaryReport
+import KWManager
+import Library
+import LibraryMap
+import LibraryPropertiesForm
+import MediaConvert
+import Misc                         # Transana's Miscellaneous functions
+import Note
 import NoteEditor
-# import Python's datetime module
+import NotePropertiesForm
+import NotesBrowser
+import PlayAllClips
+import ProcessSearch
+import PropagateChanges             # Transana's Change Propagation routines
+import Quote
+if TransanaConstants.proVersion:
+    import QuotePropertiesForm
+import ReportGenerator
+import RichTextEditCtrl_RTC         # Rich Text Control for importing text files
+import Snapshot
+if TransanaConstants.proVersion:
+    import SnapshotPropertiesForm
+import SpreadsheetDataImport
+from TransanaExceptions import *
+import TransanaGlobal
+import TransanaImages
+import Transcript
+import TranscriptPropertiesForm
+import WordFrequencyReport          # Transana's Word Frequency Report
+
+# import Python modules
+import cPickle                      # Used in Drag and Drop
 import datetime
+import exceptions
 import os
 import sys
 import string
 import time
-import LibraryMap
-import KeywordMapClass
-import ReportGenerator
-import KeywordSummaryReport
-import AnalyticDataExport
-import PlayAllClips
-import DragAndDropObjects           # Implements Drag and Drop logic and objects
-import cPickle                      # Used in Drag and Drop
-import Misc                         # Transana's Miscellaneous functions
-import PropagateChanges             # Transana's Change Propagation routines
-import MediaConvert
-import WordFrequencyReport          # Transana's Word Frequency Report
 
 class DatabaseTreeTab(wx.Panel):
     """This class defines the object for the "Database" tab of the Data
@@ -100,6 +105,12 @@ class DatabaseTreeTab(wx.Panel):
         mainSizer.Add(self.tree, 1, wx.EXPAND)
         self.tree.UnselectAll()
         self.tree.SelectItem(self.tree.GetRootItem())
+
+        # This is bad.  Sorry.
+        # Create a hidden RichTextEditCtrl to use for importing data
+        self.hiddenRTC = RichTextEditCtrl_RTC.RichTextEditCtrl(self)
+        # This control should NOT be visible
+        self.hiddenRTC.Show(False)
 
         self.SetSizer(mainSizer)
         self.SetAutoLayout(True)
@@ -4958,23 +4969,98 @@ class _DBTreeCtrl(wx.TreeCtrl):
                         tmpDocument.import_date = datetime.datetime.now()
                         # If an XML file, an RTF file, or a TXT file was found ...
                         if os.path.exists(filename):
-                            # ... start exception handling ...
-                            try:
-                                # Open the file
-                                f = open(filename, "r")
-                                # Read the file straight into the Document Text
-                                tmpDocument.text = f.read()
-                                # if we have a text file but no txt header ...
-                                if (filename[-4:].lower() == '.txt') and (tmpDocument.text[:3].lower() != 'txt'):
-                                    # ... add "txt" to the start of the file to signal that it's a text file
-                                    tmpDocument.text = 'txt\n' + tmpDocument.text
-                                # Close the file
-                                f.close()
-                            # If exceptions are raised ...
-                            except:
-                                # ... we don't need to do anything here.
-                                # The consequence is probably that the Transcript Text will be blank.
-                                pass
+                            # Separate the path/filename from the file extension.  Extension is a proxy for file type.
+                            (fname, fext) = os.path.splitext(filename)
+                            # Convert the file extension to all lower case
+                            fext = fext.lower()
+
+                            # If we have a Word DOCx file ...
+                            if fext == '.docx':
+                                # Load the DOCx file into the hidden RichTextCtrl
+                                self.parent.hiddenRTC.LoadDOCxFile(filename)
+                                # Get the XML data from the control for the Document Object
+                                tmpDocument.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                # Get the Plain Text while we're at it.
+                                tmpDocument.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+
+                            # If we have a Rich Text Format file ...
+                            elif fext == '.rtf':
+                                # Load the RTF file into the hidden RichTextCtrl
+                                self.parent.hiddenRTC.LoadRTFFile(filename)
+                                # Get the XML data from the control for the Document Object
+                                tmpDocument.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                # Get the Plain Text while we're at it.
+                                tmpDocument.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+
+                            elif fext == '.xml':
+                                # ... start exception handling ...
+                                try:
+                                    # Open the file
+                                    f = open(filename, "r")
+                                    # Read the file straight into the Transcript Text
+                                    fileContents = f.read()
+                                    # if the text does NOT have an RTF or XML header ...
+                                    if (fileContents[:5].lower() == '<?xml'):
+                                        # Load the XML file into the hidden RichTextCtrl
+                                        self.parent.hiddenRTC.LoadXMLData(fileContents)
+                                        # Get the XML data from the control for the Document Object
+                                        tmpDocument.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                        # Get the Plain Text while we're at it.
+                                        tmpDocument.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+                                    else:
+
+                                        message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                        
+                                        dlg = Dialogs.ErrorDialog(self, message % filename)
+                                        dlg.ShowModal()
+                                        dlg.Destroy()
+
+                                # If exceptions are raised ...
+                                except:
+                            
+                                    message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                    
+                                    dlg = Dialogs.ErrorDialog(self, message % filename)
+                                    dlg.ShowModal()
+                                    dlg.Destroy()
+
+                                finally:
+                                    # Close the file
+                                    f.close()
+
+                            elif fext == '.txt':
+                                # ... start exception handling ...
+                                try:
+                                    # Open the file
+                                    f = open(filename, "r")
+                                    # Read the file straight into the Transcript Text
+                                    fileContents = f.read()
+                                    # ... add "txt" to the start of the file to signal that it's probably a text file
+                                    tmpDocument.text = 'txt\n' + fileContents
+                                    # ... add the plaintext too!
+                                    tmpDocument.plaintext = fileContents
+                                    
+                                # If exceptions are raised ...
+                                except:
+                            
+                                    message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                    
+                                    dlg = Dialogs.ErrorDialog(self, message % filename)
+                                    dlg.ShowModal()
+                                    dlg.Destroy()
+
+                                finally:
+                                    # Close the file
+                                    f.close()
+
+                            else:
+                                
+                                message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                
+                                dlg = Dialogs.ErrorDialog(self, message % filename)
+                                dlg.ShowModal()
+                                dlg.Destroy()
+
                         # Start exception handling
                         try:
                             # Save the new Document.  An exception will be generated if a Document or Episode with this name already exists.
@@ -5108,6 +5194,11 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             if os.path.exists(os.path.join(path, filenameroot + '.xml')):
                                 # If so, let's remember that.
                                 fname = os.path.join(path, filenameroot + '.xml')
+                            # See if a DOCx file exists in the media file's
+                            # directory with the same root file name
+                            elif os.path.exists(os.path.join(path, filenameroot + '.docx')):
+                                # If so, let's remember that.
+                                fname = os.path.join(path, filenameroot + '.docx')
                             # See if an RTF file exists in the media file's
                             # directory with the same root file name
                             elif os.path.exists(os.path.join(path, filenameroot + '.rtf')):
@@ -5134,23 +5225,98 @@ class _DBTreeCtrl(wx.TreeCtrl):
                                 fname = False
                             # If an XML file, an RTF file, or a TXT file was found ...
                             if fname:
-                                # ... start exception handling ...
-                                try:
-                                    # Open the file
-                                    f = open(fname, "r")
-                                    # Read the file straight into the Transcript Text
-                                    tmpTranscript.text = f.read()
-                                    # if we have a text file but no txt header ...
-                                    if (fname[-4:].lower() == '.txt') and (tmpTranscript.text[:3].lower() != 'txt'):
-                                        # ... add "txt" to the start of the file to signal that it's a text file
-                                        tmpTranscript.text = 'txt\n' + tmpTranscript.text
-                                    # Close the file
-                                    f.close()
-                                # If exceptions are raised ...
-                                except:
-                                    # ... we don't need to do anything here.
-                                    # The consequence is probably that the Transcript Text will be blank.
-                                    pass
+                                # Separate the path/filename from the file extension.  Extension is a proxy for file type.
+                                (filename, fext) = os.path.splitext(fname)
+                                # Convert the file extension to all lower case
+                                fext = fext.lower()
+
+                                # If we have a Word DOCx file ...
+                                if fext == '.docx':
+                                    # Load the DOCx file into the hidden RichTextCtrl
+                                    self.parent.hiddenRTC.LoadDOCxFile(fname)
+                                    # Get the XML data from the control for the Document Object
+                                    tmpTranscript.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                    # Get the Plain Text while we're at it.
+                                    tmpTranscript.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+
+                                # If we have a Rich Text Format file ...
+                                elif fext == '.rtf':
+                                    # Load the RTF file into the hidden RichTextCtrl
+                                    self.parent.hiddenRTC.LoadRTFFile(fname)
+                                    # Get the XML data from the control for the Document Object
+                                    tmpTranscript.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                    # Get the Plain Text while we're at it.
+                                    tmpTranscript.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+
+                                elif fext == '.xml':
+                                    # ... start exception handling ...
+                                    try:
+                                        # Open the file
+                                        f = open(fname, "r")
+                                        # Read the file straight into the Transcript Text
+                                        fileContents = f.read()
+                                        # if the text does NOT have an RTF or XML header ...
+                                        if (fileContents[:5].lower() == '<?xml'):
+                                            # Load the XML file into the hidden RichTextCtrl
+                                            self.parent.hiddenRTC.LoadXMLData(fileContents)
+                                            # Get the XML data from the control for the Document Object
+                                            tmpTranscript.text = self.parent.hiddenRTC.GetFormattedSelection('XML')
+                                            # Get the Plain Text while we're at it.
+                                            tmpTranscript.plaintext = self.parent.hiddenRTC.GetPlainTextSelection()
+                                        else:
+
+                                            message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                            
+                                            dlg = Dialogs.ErrorDialog(self, message % fname)
+                                            dlg.ShowModal()
+                                            dlg.Destroy()
+
+                                    # If exceptions are raised ...
+                                    except:
+                            
+                                        message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                        
+                                        dlg = Dialogs.ErrorDialog(self, message % fname)
+                                        dlg.ShowModal()
+                                        dlg.Destroy()
+
+                                    finally:
+                                        # Close the file
+                                        f.close()
+
+                                elif fext == '.txt':
+                                    # ... start exception handling ...
+                                    try:
+                                        # Open the file
+                                        f = open(fname, "r")
+                                        # Read the file straight into the Transcript Text
+                                        fileContents = f.read()
+                                        # ... add "txt" to the start of the file to signal that it's probably a text file
+                                        tmpTranscript.text = 'txt\n' + fileContents
+                                        # ... add the plaintext too!
+                                        tmpTranscript.plaintext = fileContents
+                                        
+                                    # If exceptions are raised ...
+                                    except:
+                            
+                                        message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                        
+                                        dlg = Dialogs.ErrorDialog(self, message % fname)
+                                        dlg.ShowModal()
+                                        dlg.Destroy()
+
+                                    finally:
+                                        # Close the file
+                                        f.close()
+
+                                else:
+                            
+                                    message = unicode(_('Transana could not import file\n"%s"'), 'utf8')
+                                    
+                                    dlg = Dialogs.ErrorDialog(self, message % fname)
+                                    dlg.ShowModal()
+                                    dlg.Destroy()
+
                             # Now save the new Transcript record.  Since we just created the Episode, we don't have to worry
                             # about a conflicting Transcript already existing.
                             tmpTranscript.db_save()
