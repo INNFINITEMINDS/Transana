@@ -219,3 +219,5 @@ unit_test_format.py
 MessageServer/MessageServer300 with Log File.py
 images/Embedded/1_AddNew.bat
 SkipWords - en.txt
+*.nsh
+*.nsi

@@ -311,7 +311,7 @@ class XMLToRTCHandler(xml.sax.handler.ContentHandler):
         # If we have an unhandled element ...
         else:
             # ... output a message and the element attributes.
-            print "PyRTFParser.XMLToRTFHandler.startElement():  Unknown XML tag:", name
+            print "PyXML_RTCImportParser.XMLToRTCHandler.startElement():  Unknown XML tag:", name
             for x in attributes.keys():
                 print x, attributes[x]
             print
@@ -406,7 +406,7 @@ class XMLToRTCHandler(xml.sax.handler.ContentHandler):
 ##
 ##                # If we still don't know what kind of bullet we have, we're in trouble.
 ##                else:
-##                    print "PyRTFParser.startElement() SYMBOL INSERTION FAILURE"
+##                    print "PyXML_RTCImportParser.startElement() SYMBOL INSERTION FAILURE"
                     
             # Paragraph alignment left is u'1'
             if self.paragraphAttributes[u'paragraph'][u'alignment'] == u'1':

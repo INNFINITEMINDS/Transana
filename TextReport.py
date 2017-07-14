@@ -440,7 +440,7 @@ class TextReport(wx.Frame):
     def OnSaveAs(self, event):
         """Export the report to an RTF or HTML file."""
         # Create a File Dialog for saving an RTF or HTML file
-        dlg = wx.FileDialog(self, wildcard=_(u'Rich Text Format (*.rtf)|*.rtf|HTML(*.html, *.htm)|*.html;*.htm'), style=wx.SAVE)
+        dlg = wx.FileDialog(self, wildcard=_(u'Word Format (*.docx)|*.docx|Rich Text Format (*.rtf)|*.rtf|HTML(*.html, *.htm)|*.html;*.htm'), style=wx.SAVE)
         # Display the dialog and get the user input
         if dlg.ShowModal() == wx.ID_OK:
             # Get the File name
@@ -448,6 +448,9 @@ class TextReport(wx.Frame):
             # Mac doesn't automatically append the file extension.  Do it if necessary.
             # If RTF ...
             if dlg.GetFilterIndex() == 0:
+                if not fname.upper().endswith(".DOCX"):
+                    fname += '.docx'
+            elif dlg.GetFilterIndex() == 1:
                 if not fname.upper().endswith(".RTF"):
                     fname += '.rtf'
             else:
@@ -467,7 +470,7 @@ class TextReport(wx.Frame):
                 # If the user chooses to overwrite ...
                 if dlg2.LocalShowModal() == wx.ID_YES:
                     # If RTF ...
-                    if dlg.GetFilterIndex() == 0:
+                    if dlg.GetFilterIndex() in (0, 1):
                         # ... export teh data to the file
                         self.reportText.export_transcript(fname)
                     else:
@@ -477,7 +480,7 @@ class TextReport(wx.Frame):
             # If the specified file doesn't already exist ...
             else:
                 # If RTF ...
-                if dlg.GetFilterIndex() == 0:
+                if dlg.GetFilterIndex() in (0, 1):
                     # ... export teh data to the file
                     self.reportText.export_transcript(fname)
                 else:

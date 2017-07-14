@@ -61,6 +61,8 @@ import Transcript
 import TranscriptionUI_RTC
 # import the TranscriptEditor object
 import TranscriptEditor_RTC
+# Import the Python DocX Parser I wrote
+import PyDocxParser
 # Import the Python Rich Text Parser I wrote
 import PyRTFParser
 
@@ -1617,6 +1619,78 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
         self.EndSuppressUndo()
         self.Thaw()
 
+    def LoadRTFFile(self, fileName, clearDoc=True):
+        """ Load Rich Text Format data into the RichTextEditCtrl """
+        # Prepare the control for data
+        self.Freeze()
+        self.BeginSuppressUndo()
+        # If clearing the document first is requested ...
+        if clearDoc:
+            # Clear the Control AND the default text attributes
+            self.ClearDoc()
+        # Start exception handling
+        try:
+            # Use the custom RTF Handler
+            handler = PyRTFParser.PyRichTextRTFHandler()
+            # Load the Docx file via the XML Handler.
+            # Note that for Docx, the wxRichTextCtrl CONTROL is passed.
+            handler.LoadFile(self, fileName)
+        # exception handling for Memory Errors
+        except exceptions.MemoryError:
+            # Create the error message
+            prompt = _("Memory Error.  This RTF file is too large to import.\nTry removing some images from the document.")
+            # Display the Error Message
+            errDlg = Dialogs.ErrorDialog(self, prompt)
+            errDlg.ShowModal()
+            errDlg.Destroy()
+        # exception handling
+        except:
+            print "Custom RTF Handler Load failed"
+            print
+            print sys.exc_info()[0], sys.exc_info()[1]
+            print traceback.print_exc()
+            print
+            pass
+        # Signal the end of changing the control
+        self.EndSuppressUndo()
+        self.Thaw()
+        
+    def LoadDOCxFile(self, fileName, clearDoc=True):
+        """ Load Word DOCx Format data into the RichTextEditCtrl """
+        # Prepare the control for data
+        self.Freeze()
+        self.BeginSuppressUndo()
+        # If clearing the document first is requested ...
+        if clearDoc:
+            # Clear the Control AND the default text attributes
+            self.ClearDoc()
+        # Start exception handling
+        try:
+            # Use the custom RTF Handler
+            handler = PyDocxParser.PyRichTextDocxHandler()
+            # Load the Docx file via the XML Handler.
+            # Note that for Docx, the wxRichTextCtrl CONTROL is passed.
+            handler.LoadFile(self, fileName)
+        # exception handling for Memory Errors
+        except exceptions.MemoryError:
+            # Create the error message
+            prompt = _("Memory Error.  This RTF file is too large to import.\nTry removing some images from the document.")
+            # Display the Error Message
+            errDlg = Dialogs.ErrorDialog(self, prompt)
+            errDlg.ShowModal()
+            errDlg.Destroy()
+        # exception handling
+        except:
+            print "Custom RTF Handler Load failed"
+            print
+            print sys.exc_info()[0], sys.exc_info()[1]
+            print traceback.print_exc()
+            print
+            pass
+        # Signal the end of changing the control
+        self.EndSuppressUndo()
+        self.Thaw()
+        
     def LoadXMLData(self, text, clearDoc=True):
         """ Load XML data into the RichTextEditCtrl """
         # Prepare the control for data
@@ -1662,6 +1736,34 @@ class RichTextEditCtrl(richtext.RichTextCtrl):
                     handler.SaveFile(self.GetBuffer(), filepath)
             # Exception Handling
             except:
+                print "Custom RTF Handler Save failed"
+                print
+                print sys.exc_info()[0], sys.exc_info()[1]
+                print traceback.print_exc()
+                print
+                pass
+
+    def SaveDocxDocument(self, filepath):
+        """ Save the control's contents as a Word Docx document """
+        # If there's text in the wxRichTextCtrl ...
+        if len(self.GetValue()) > 0:
+            # Begin exception handling
+            try:
+                # If an existing file is selected ...
+                if (filepath != ""):
+                    # Use the custom RTF Handler
+                    handler = PyDocxParser.PyRichTextDocxHandler()
+                    # Save the file with the custom Docx Handler.
+                    # The custom Docx Handler can take either a wxRichTextCtrl or a wxRichTextBuffer argument.
+                    handler.SaveFile(self.GetBuffer(), filepath)
+            # Exception Handling
+            except:
+
+                msg = "RichTextEditCtrl.SaveDocxDocument():  Save Error ... \n\n%s\n\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
+                dlg = Dialogs.ErrorDialog(None, msg)
+                dlg.ShowModal()
+                dlg.Destroy()
+
                 print "Custom RTF Handler Save failed"
                 print
                 print sys.exc_info()[0], sys.exc_info()[1]

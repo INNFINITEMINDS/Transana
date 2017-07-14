@@ -3467,7 +3467,7 @@ class ControlObject(object):
             # ... whereas with Left-to-Right languages
             else:
                 # ... we can export both RTF and XML formats
-                wildcard = _("Rich Text Format (*.rtf)|*.rtf|XML Format (*.xml)|*.xml")
+                wildcard = _("Word Format (*.docx)|*.docx|Rich Text Format (*.rtf)|*.rtf|XML Format (*.xml)|*.xml")
             dlg = wx.FileDialog(None, defaultDir=self.defaultExportDir,
                                 wildcard=wildcard, style=wx.SAVE)
             if dlg.ShowModal() == wx.ID_OK:
@@ -3476,11 +3476,13 @@ class ControlObject(object):
                 self.defaultExportDir = dlg.GetDirectory()
                 fname = dlg.GetPath()
                 # Mac doesn't automatically append the file extension.  Do it if necessary.
-                if (TransanaGlobal.configData.LayoutDirection != wx.Layout_RightToLeft) and \
-                   (dlg.GetFilterIndex() == 0) and \
+                if (dlg.GetFilterIndex() == 0) and (not fname.upper().endswith(".DOCX")):
+                    fname += '.docx'
+                elif (TransanaGlobal.configData.LayoutDirection != wx.Layout_RightToLeft) and \
+                   (dlg.GetFilterIndex() == 1) and \
                    (not fname.upper().endswith(".RTF")):
                     fname += '.rtf'
-                elif (dlg.GetFilterIndex() == 1) and (not fname.upper().endswith(".XML")):
+                elif (dlg.GetFilterIndex() == 2) and (not fname.upper().endswith(".XML")):
                     fname += '.xml'
                 if os.path.exists(fname):
                     prompt = unicode(_('A file named "%s" already exists.  Do you want to replace it?'), 'utf8')

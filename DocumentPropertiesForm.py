@@ -30,6 +30,8 @@ import Document
 import KWManager
 # import Transana's Library object
 import Library
+# Import Transana's Rich Text Edit Control (for importing files)
+import RichTextEditCtrl_RTC
 # import Transana's Globals
 import TransanaGlobal
 # import Transana's Images
@@ -95,7 +97,7 @@ class DocumentPropertiesForm(Dialogs.GenForm):
             # Create a VERTICAL sizer for the next element
             v3 = wx.BoxSizer(wx.VERTICAL)
             # Add the Import File element
-            self.rtfname_edit = self.new_edit_box(_("RTF/XML/TXT File to import  (optional)"), v3, '')
+            self.rtfname_edit = self.new_edit_box(_("DOCX/RTF/XML/TXT File to import  (optional)"), v3, '')
             # Make this text box a File Drop Target
             self.rtfname_edit.SetDropTarget(EditBoxFileDropTarget(self.rtfname_edit))
             # Add the element to the row sizer
@@ -346,6 +348,12 @@ class DocumentPropertiesForm(Dialogs.GenForm):
         for documentKeyword in self.obj.keyword_list:
             self.ekw_lb.Append(documentKeyword.keywordPair)
 
+        # This is bad.  Sorry.
+        # Create a hidden RichTextEditCtrl to use for importing data
+        self.hiddenRTC = RichTextEditCtrl_RTC.RichTextEditCtrl(self)
+        # This control should NOT be visible
+        self.hiddenRTC.Show(False)
+
         # Set focus to the Transcript ID
         self.id_edit.SetFocus()
 
@@ -402,15 +410,8 @@ class DocumentPropertiesForm(Dialogs.GenForm):
         """ Method for when Browse button is clicked """
         # Get the default data directory
         dirName = TransanaGlobal.configData.videoPath
-        # If we're using a Right-To-Left language ...
-##        if TransanaGlobal.configData.LayoutDirection == wx.Layout_RightToLeft:
-            # ... we can only export to XML format
-##            wildcard = _("Transcript Import Files (*.xml)|*.xml;|All Files (*.*)|*.*")
-        # ... whereas with Left-to-Right languages
-##        else:
-            # ... we can import both RTF and XML formats
-        wildcard = _("Transcript Import Formats (*.rtf, *.xml, *.txt)|*.rtf;*.xml;*.txt|Rich Text Format Files (*.rtf)|*.rtf|XML Files (*.xml)|*.xml|Text Files (*.txt)|*.txt|All Files (*.*)|*.*")
-        # Allow for RTF, XML, TXT or *.* combinations
+        # Allow for DOCX, RTF, XML, TXT or *.* combinations
+        wildcard = _("Transcript Import Formats (*.docx, *.rtf, *.xml, *.txt)|*.docx;*.rtf;*.xml;*.txt|Word Document Files (*.docx)|*.docx|Rich Text Format Files (*.rtf)|*.rtf|XML Files (*.xml)|*.xml|Text Files (*.txt)|*.txt|All Files (*.*)|*.*")
         dlg = wx.FileDialog(None, defaultDir=dirName, wildcard=wildcard, style=wx.OPEN)
         # Get a file selection from the user
         if dlg.ShowModal() == wx.ID_OK:
@@ -529,31 +530,93 @@ class DocumentPropertiesForm(Dialogs.GenForm):
             # If this is a new Document ...
             if self.obj.number == 0:
                 # Get the Media File to import
-                fname = d[_('RTF/XML/TXT File to import  (optional)')]
+                fname = d[_('DOCX/RTF/XML/TXT File to import  (optional)')]
                 # Remember this as the imported file name
                 self.obj.imported_file = fname
                 # If a media file is entered ...
                 if fname:
-                    # ... start exception handling ...
-                    try:
-                        # Open the file
-                        f = open(fname, "r")
-                        # Read the file straight into the Transcript Text
-                        self.obj.text = f.read()
-                        # if the text does NOT have an RTF or XML header ...
-                        if (self.obj.text[:5].lower() != '{\\rtf') and (self.obj.text[:5].lower() != '<?xml'):
+                    # Separate the path/filename from the file extension.  Extension is a proxy for file type.
+                    (fname, fext) = os.path.splitext(fname)
+                    # Convert the file extension to all lower case
+                    fext = fext.lower()
+
+                    # If we have a Word DOCx file ...
+                    if fext == '.docx':
+                        # Load the DOCx file into the hidden RichTextCtrl
+                        self.hiddenRTC.LoadDOCxFile(self.obj.imported_file)
+                        # Get the XML data from the control for the Document Object
+                        self.obj.text = self.hiddenRTC.GetFormattedSelection('XML')
+                        # Get the Plain Text while we're at it.
+                        self.obj.plaintext = self.hiddenRTC.GetPlainTextSelection()
+
+                    # If we have a Rich Text Format file ...
+                    elif fext == '.rtf':
+                        # Load the RTF file into the hidden RichTextCtrl
+                        self.hiddenRTC.LoadRTFFile(self.obj.imported_file)
+                        # Get the XML data from the control for the Document Object
+                        self.obj.text = self.hiddenRTC.GetFormattedSelection('XML')
+                        # Get the Plain Text while we're at it.
+                        self.obj.plaintext = self.hiddenRTC.GetPlainTextSelection()
+
+                    elif fext == '.xml':
+                        # ... start exception handling ...
+                        try:
+                            # Open the file
+                            f = open(self.obj.imported_file, "r")
+                            # Read the file straight into the Transcript Text
+                            fileContents = f.read()
+                            # if the text does NOT have an RTF or XML header ...
+                            if (fileContents[:5].lower() == '<?xml'):
+                                # Load the XML file into the hidden RichTextCtrl
+                                self.hiddenRTC.LoadXMLData(fileContents)
+                                # Get the XML data from the control for the Document Object
+                                self.obj.text = self.hiddenRTC.GetFormattedSelection('XML')
+                                # Get the Plain Text while we're at it.
+                                self.obj.plaintext = self.hiddenRTC.GetPlainTextSelection()
+                        # If exceptions are raised ...
+                        except:
+                            
+                            print "Problem reading XML file"
+
+                            # Clear out the object.
+                            self.obj = None
+
+                        finally:
+                            # Close the file
+                            f.close()
+
+                    elif fext == '.txt':
+                        # ... start exception handling ...
+                        try:
+                            # Open the file
+                            f = open(self.obj.imported_file, "r")
+                            # Read the file straight into the Transcript Text
+                            fileContents = f.read()
                             # ... add "txt" to the start of the file to signal that it's probably a text file
-                            self.obj.text = 'txt\n' + self.obj.text
-                        # Close the file
-                        f.close()
-                    # If exceptions are raised ...
-                    except:
-                        # ... we don't need to do anything here.  (Error message??)
-                        # The consequence is probably that the Document Text will be blank.
-                        pass
-##            else:
-##                self.obj.imported_file = d[_('Imported File')]
-                
+                            self.obj.text = 'txt\n' + fileContents
+                            # ... add the plaintext too!
+                            self.obj.plaintext = fileContents
+                            
+                        # If exceptions are raised ...
+                        except:
+                            
+                            print "Problem reading TXT file"
+
+                            # Clear out the object.
+                            self.obj = None
+
+                        finally:
+                            # Close the file
+                            f.close()
+
+                    else:
+
+                        print "UNKNOWN FILE TYPE based on file extension:", self.obj.imported_file
+                        print
+
+                        # Clear out the object.
+                        self.obj = None
+
         # If there's no input from the user ...
         else:
             # ... then we can set the Document Object to None to signal this.

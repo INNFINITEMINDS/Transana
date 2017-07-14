@@ -227,8 +227,8 @@ class TranscriptEditor(RichTextEditCtrl):
         elif (transcript.text == '') or transcript.text[0:24] == u'<(transcript-less clip)>':
             dataType = 'transcript-less clip'
         # Otherwise, we probably have a Styled Text Ctrl object that's been pickled (Transana 2.42 and earlier)
-        else:
-            dataType = 'pickle'
+#        else:
+#            dataType = 'pickle'
         # dataType should only ever be "pickle", "text", "rtf", "xml" or "filename"
 
         # If we are dealing with a Plain Text document ...
@@ -312,20 +312,21 @@ class TranscriptEditor(RichTextEditCtrl):
             # Initialize that the transcript has not yet changed.
             self.TranscriptObj.has_changed = 0
 
-        # if we have a wxSTC-style pickled transcript object ...
-        elif dataType == 'pickle':
-            # import the STC Transcript Editor
-            import TranscriptEditor_STC
-            # Create an invisible STC-based Transcript Editor
-            invisibleSTC = TranscriptEditor_STC.TranscriptEditor(self.parent)
-            # HIDE the invisible editor
-            invisibleSTC.Show(False)
-            # Load the STC-style picked data into the STC Editor
-            invisibleSTC.load_transcript(transcript, 'pickle')
-            # Convert the STC contents to Rich Text Format
-            transcript.text = invisibleSTC.GetRTFBuffer()
-            # Destroy the STC-based Editor
-            invisibleSTC.Destroy()
+##        # if we have a wxSTC-style pickled transcript object ...
+##        elif dataType == 'pickle':
+##            # import the STC Transcript Editor
+##            import TranscriptEditor_STC
+##            # Create an invisible STC-based Transcript Editor
+##            invisibleSTC = TranscriptEditor_STC.TranscriptEditor(self.parent)
+##            # HIDE the invisible editor
+##            invisibleSTC.Show(False)
+##            # Load the STC-style picked data into the STC Editor
+##            invisibleSTC.load_transcript(transcript, 'pickle')
+##            # Convert the STC contents to Rich Text Format
+##            transcript.text = invisibleSTC.GetRTFBuffer()
+##            # Destroy the STC-based Editor
+##            invisibleSTC.Destroy()
+
         # If we have a transcript-less Clip ...
         elif dataType == 'transcript-less clip':
             # ... then it should have not Transcript Text !!!
@@ -337,7 +338,7 @@ class TranscriptEditor(RichTextEditCtrl):
 
         # THIS SHOULD NOT BE AN ELIF.
         # If we have a filename, RichTextFormat, or a pickle that has just been converted to RTF ...
-        if dataType in ['filename', 'rtf', 'pickle']:
+        if dataType in ['filename', 'rtf']:  # , 'pickle']:
             # looks like this is an RTF text file or an rtf transcript.
 
             # was the given transcript object simply a filename?
@@ -674,7 +675,7 @@ class TranscriptEditor(RichTextEditCtrl):
                 self.UpdateCurrentContents('EnterEditMode')
 
     def export_transcript(self, fname):
-        """Export the transcript to an RTF file."""
+        """Export the transcript to an RTF, XML, or DOCx file."""
         # If Partial Transcript editing is enabled ...
         if TransanaConstants.partialTranscriptEdit:
             # If we have only part of the transcript in the editor, we need to restore the full transcript
@@ -729,6 +730,10 @@ class TranscriptEditor(RichTextEditCtrl):
         if fname[-4:].lower() == '.rtf':
             # ... save the document in Rich Text Format
             self.SaveRTFDocument(fname)
+        # If saving a DOCx file ...
+        elif fname[-5:].lower() == '.docx':
+            # ... save the document in Rich Text Format
+            self.SaveDocxDocument(fname)
         # If saving an XML file ...
         elif fname[-4:].lower() == '.xml':
             # ... save the document in XML format
