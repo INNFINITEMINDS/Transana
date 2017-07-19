@@ -21,6 +21,25 @@ __author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
 
 """
+     Transana 3.20 uses the following programming tools and modules:
+
+     Program                                            Win Version        Mac Version
+       Python                                             2.7.11             2.7.12
+       wxPython                                           3.0.2.0            3.0.2.0
+       MySQL for Python (server)(Python 2.7.x)            1.2.3
+       PyMySQL (server)(Python 2.7.x)                                        1.2.6 final
+       SQLite (embedded)(Python 2.7.x)                    2.6.0              2.6.0
+       ctypes                                             1.1.0              1.1.0
+       Crypto                                             2.6                2.6.1
+       paramiko                                           1.15.2             1.15.2
+       numpy                                              1.10.2             1.9.2
+       python-docx (my custom build)                      0.8.7-DKW          0.8.7-DKW
+       lxml                                               3.6.0              3.6.0
+       pyparsing                                          2.2.0              2.2.0
+       wordcloud                                          1.2.1              1.2.1
+       
+
+
      Transana 2.61 uses the following programming tools and modules:
 
      Program                                            Win Version        Mac Version
@@ -160,7 +179,7 @@ class Transana(wx.App):
                 print "Transana started:", time.asctime()
             except:
 
-                if False:
+                if True:
                     # Display the Exception Message, allow "continue" flag to remain true
                     prompt = _("Exception %s : %s")
                     errordlg = Dialogs.ErrorDialog(None, prompt % (sys.exc_info()[0], sys.exc_info()[1]))
