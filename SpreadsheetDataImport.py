@@ -473,6 +473,22 @@ class SpreadsheetDataImport(wiz.Wizard):
         # Return the processed string
         return text
 
+    def fix_chars(self, text):
+        """ Convert from HTML-ized special characters to regular special characters """
+        # Clean up the text
+        text = text.replace('&amp;', '&')
+        text = text.replace('&gt;', '>')
+        text = text.replace('&lt;', '<')
+        return text
+
+    def unfix_chars(self, text):
+        """ Convert from regular special characters to HTML-ized special characters """
+        # Clean up the text
+        text = text.replace('&', '&amp;')
+        text = text.replace('>', '&gt;')
+        text = text.replace('<', '&lt;')
+        return text
+
     def OnPageChanging(self, event):
         """ Process Wizard Page changes, with VETO option """
         if event.GetPage() == self.FileNamePage:
@@ -525,12 +541,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                             # For each element in the row  ...
                             for element in row:
                                 # Process certain problem characters
-                                # Ampersand
-                                element = element.replace('&', '&amp;')
-                                # Less Than
-                                element = element.replace('<', '&lt;')
-                                # Greater Than
-                                element = element.replace('>', '&gt;')
+                                element = self.unfix_chars(element)
                                 # A weird unicode version of apostrophe that crept into one of my data files
                                 element = element.replace(chr(146), chr(39))
 
@@ -631,15 +642,9 @@ class SpreadsheetDataImport(wiz.Wizard):
                                 # Break data row up at tabs
                                 for element in row.split('\t'):
                                     # Process certain problem characters
-                                    # Ampersand
-                                    element = element.replace('&', '&amp;')
-                                    # Less Than
-                                    element = element.replace('<', '&lt;')
-                                    # Greater Than
-                                    element = element.replace('>', '&gt;')
+                                    element = self.unfix_chars(element)
                                     # A weird unicode version of apostrophe that crept into one of my data files
                                     element = element.replace(u'\u2019', unichr(39))
-
                                     # ... append it to the row data list
                                     row_data.append(element)
                                 # Now append the row data to the full data structure.
@@ -662,11 +667,11 @@ class SpreadsheetDataImport(wiz.Wizard):
                 # Place the items from the first row (that is,the first ROW of data) in the Row TextCtrl
                 self.RowsOrColumnsPage.txt1.Clear()
                 for col in self.all_data[0]:
-                    self.RowsOrColumnsPage.txt1.AppendText(self.strip_quotes(col) + u'\n')
+                    self.RowsOrColumnsPage.txt1.AppendText(self.fix_chars(self.strip_quotes(col)) + u'\n')
                 # Place the first item in each row (that is, the first COLUMN of data) in the Column TextCtrl
                 self.RowsOrColumnsPage.txt2.Clear()
                 for row in self.all_data:
-                    self.RowsOrColumnsPage.txt2.AppendText(self.strip_quotes(row[0]) + u'\n')
+                    self.RowsOrColumnsPage.txt2.AppendText(self.fix_chars(self.strip_quotes(row[0])) + u'\n')
                 # Disable the Column and Row TextCtrls
                 self.RowsOrColumnsPage.txt1.Enable(False)
                 self.RowsOrColumnsPage.txt2.Enable(False)
@@ -681,13 +686,13 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # ... by iterating through each row of data ...
                     for row in self.all_data:
                         # ... and selecting the row's first item
-                        self.questionsFromData.append(self.strip_quotes(row[0]))
+                        self.questionsFromData.append(self.fix_chars(self.strip_quotes(row[0])))
                 # Determine the Questions if the user selected Rows ...
                 else:
                     # ... by iterating through the first row of data
                     for col in self.all_data[0]:
                         # ... and selecting the column's header
-                        self.questionsFromData.append(self.strip_quotes(col))
+                        self.questionsFromData.append(self.fix_chars(self.strip_quotes(col)))
 
                 # Populate the combo of Questions / Prompts used to select the Unique Identifier after adding an automatic creation option
                 self.ItemsToIncludePage.identifier.SetItems([_('Create one automatically')] + self.questionsFromData)
@@ -842,7 +847,7 @@ class SpreadsheetDataImport(wiz.Wizard):
             # Create Document by participantID
             tmpDoc = Document.Document()
             # Populate essential Document Properties
-            tmpDoc.id = participantID
+            tmpDoc.id = self.fix_chars(participantID)
             tmpDoc.library_num = libraryNumber
             tmpDoc.imported_file = self.FileNamePage.txtSrcFileName.GetValue()
             tmpDoc.import_date = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -879,13 +884,13 @@ class SpreadsheetDataImport(wiz.Wizard):
                 tmpDoc.text += """    <paragraph leftindent="0" rightindent="0" parspacingafter="51">
 <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                 # Add the Question
-                tmpDoc.text += question.encode('utf8') # + '\n'
+                tmpDoc.text += self.unfix_chars(question.encode('utf8')) # + '\n'
                 # Close the Paragraph declaration
                 tmpDoc.text += """</text>
 </paragraph>
 """
                 # Add the Question ot the Plain Text
-                tmpDoc.plaintext += question + u'\n'
+                tmpDoc.plaintext += self.fix_chars(question) + u'\n'
 
                 # An answer *might* contain multiple paragraphs separated by newlines.  If so, each
                 # one needs its own paragraph specification.
@@ -904,7 +909,7 @@ class SpreadsheetDataImport(wiz.Wizard):
 </paragraph>
 """
                         # Add the answer paragraph to the Plain Text
-                        tmpDoc.plaintext += answerPart + u'\n'
+                        tmpDoc.plaintext += self.fix_chars(answerPart) + u'\n'
 
                 # If we are creating Quotes ...
                 if createQuote:
@@ -915,16 +920,16 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # If we don't already have the Collection in our list of Collections ...
                     else:
                         # ... create a Collection ID based on Question Number and some question text ...
-                        collectionID = unicode("Q%04d - %s", 'utf8') % (questionNum, question[:50].strip())
+                        collectionID = unicode("Q%04d - %s", 'utf8') % (questionNum, self.fix_chars(question.strip()))
                         # Start exception handling
                         try:
                             # ... try to open the Collection
                             collection2 = Collection.Collection(collectionID, collection1.number)
                         # If the Collection does not yet exist, Transana will raise a RecordNotFoundError 
                         except TransanaExceptions.RecordNotFoundError:
-                            # ... indicating that we need to create the Collectoin.
+                            # ... indicating that we need to create the Collection.
                             collection2 = Collection.Collection()
-                            collection2.id = collectionID
+                            collection2.id = collectionID[:50]
                             collection2.parent = collection1.number
                             collection2.comment = unicode(_('Created during Spreadsheet Data Import for file "%s."'), 'utf8') % self.FileNamePage.txtSrcFileName.GetValue()
                             collection2.keyword_group = unicode(_('Auto-code'), 'utf8')
@@ -940,7 +945,7 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # Create a new Quote
                     quote1 = Quote.Quote()
                     # Create a Quote ID from the Participant ID and the Question Number
-                    quote1.id = participantID + unicode("  Q%04d" % questionNum, 'utf8')
+                    quote1.id = self.fix_chars(participantID) + unicode("  Q%04d" % questionNum, 'utf8')
                     # Populate the Quote's Collection Number and Collection ID
                     quote1.collection_num = collection2.number
                     quote1.collection_id = collection2.id
@@ -962,13 +967,13 @@ class SpreadsheetDataImport(wiz.Wizard):
                     quote1.text += """    <paragraph leftindent="0" rightindent="0" parspacingafter="51">
   <text textcolor="#000000" bgcolor="#FFFFFF" fontpointsize="12" fontstyle="90" fontweight="90" fontunderlined="0" fontface="Courier New">"""
                     # Add the Question
-                    quote1.text += question.encode('utf8') # + '\n'
+                    quote1.text += self.unfix_chars(question.encode('utf8')) # + '\n'
                     # Close the Paragraph declaration
                     quote1.text += """</text>
 </paragraph>
 """
                     # Add the Question ot the Plain Text
-                    quote1.plaintext = question + u'\n'
+                    quote1.plaintext = self.fix_chars(question) + u'\n'
 
                     # An answer *might* contain multiple paragraphs separated by newlines.  If so, each
                     # one needs its own paragraph specification.
@@ -985,7 +990,7 @@ class SpreadsheetDataImport(wiz.Wizard):
 </paragraph>
 """
                             # Add the answer paragraph to the Plain Text
-                            quote1.plaintext += answerPart + u'\n'
+                            quote1.plaintext += self.fix_chars(answerPart) + u'\n'
 
                     # Complete the Transana-XML documeht specification
                     quote1.text += """  </paragraphlayout>
@@ -1020,8 +1025,8 @@ class SpreadsheetDataImport(wiz.Wizard):
                     # ... then the keyword is here
                     kwData = self.all_data[x][c]
                 kw = unicode("%s : %s", 'utf8') % (self.strip_quotes(self.questionsFromData[c]), self.strip_quotes(kwData))
-                # Replace Parentheses (illegal in Keywords) with Brackets
-                kw = kw.replace('(', '[')
+                # Replace HTML-ized characters, as well as replacing Parentheses (illegal in Keywords) with Brackets
+                kw = self.fix_chars(kw.replace('(', '['))
                 kw = kw.replace(')', ']')
                 # Adjust for length
                 kwg = kwg[:45]
