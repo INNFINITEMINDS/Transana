@@ -198,7 +198,7 @@ class AboutBox(wx.Dialog):
             # If F11 is pressed, show COMPONENT VERSION information
             if (key == wx.WXK_F11) or (key in [ord('S'), ord('s')]):
                 # Import Python's ctypes, Transana's DBInterface, Python's sys modules, and numpy
-                import Crypto, ctypes, DBInterface, paramiko, sys, numpy
+                import Crypto, ctypes, DBInterface, docx, numpy, paramiko, pyparsing, sys
 
                 if sys.platform == 'win32':
                     sysplat = 'Windows'
@@ -248,6 +248,10 @@ class AboutBox(wx.Dialog):
                 str = "%sCrypto:  %s\n" % (str, Crypto.__version__)
                 str = "%sparamiko:  %s\n" % (str, paramiko.__version__)
                 str = "%snumpy:     %s\n" % (str, numpy.__version__)
+                str = "%spython-docx:  %s\n" % (str, docx.__version__)
+                str = "%slxml:         %s\n" % (str, '3.6.0')
+                str = "%spyparsing:    %s\n" % (str, pyparsing.__version__)
+                str = "%swordcloud:    %s\n" % (str, '1.2.1')
                 str = "%sEncoding:  %s\n" % (str, TransanaGlobal.encoding)
                 str = "%sLanguage:  %s\n" % (str, TransanaGlobal.configData.language)
                 # Replace the Description text with the version information text
