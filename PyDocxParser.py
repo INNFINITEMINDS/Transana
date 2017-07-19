@@ -259,14 +259,20 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
         # has been a little tricky.  To get it working right, we need the path to the
         # Transana executables, where the python-docx default template can be found.
 
-        # Let's find the path
-        (path, fn) = os.path.split(sys.argv[0])
-        # If the path is not blank, add the path seperator to the end if needed
-        if (path != '') and (path[-1] != os.sep):
-            path = path + os.sep
+        # If we're working from a stand-alone executable ...
+        if hasattr(sys, "frozen"):
+            # Let's find the path
+            (path, fn) = os.path.split(sys.argv[0])
+            # If the path is not blank, add the path seperator to the end if needed
+            if (path != '') and (path[-1] != os.sep):
+                path = path + os.sep
 
-        # Create a python-docx Document using the default document template.  This MUST be defined when using py2exe
-        self.document = docx.Document(path + 'images/default.docx')
+            # Create a python-docx Document using the default document template.  This MUST be defined when using py2exe
+            self.document = docx.Document(path + 'images/default.docx')
+        # If running from source code ...
+        else:
+            # ... then docx knows where to find it's default template automatically.
+            self.document = docx.Document()
 
         # Define a variable for tracking what element we are changing
         self.element = ''
@@ -339,7 +345,8 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
         # Remember the element's name
         self.element = name
 
-###        print "PyDocxParser.XMLToDocxHandler.startElement():", name, attributes
+        if DEBUG:
+            print "PyDocxParser.XMLToDocxHandler.startElement():", name
 
         # If the element is a paragraphlayout, paragraph, symbol, or text element ...
         if name in [u'paragraphlayout', u'paragraph', u'symbol', u'text']:
@@ -549,6 +556,16 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
             else:
                 parAfter = int(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) # + int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore'])
                 par_format.space_after = docx.shared.Mm(max(parAfter, 0) / 10.0)
+            # If Tabs are defined ...
+            if self.paragraphAttributes[u'paragraph'][u'tabs'] != None:
+                # ... break the tab data into its component pieces
+                tabStops = self.paragraphAttributes[u'paragraph'][u'tabs'].split(',')
+                # For each tab stop ...
+                for x in tabStops:
+                    # ... (assuming the data isn't empty) ...
+                    if x != u'':
+                        # ... add the tab stop data to the DOCx output
+                        par_format.tab_stops.add_tab_stop(docx.shared.Mm(int(x) / 10.0))
 
     def characters(self, data):
         """ xml.sax required method for handling the characters within XML elements """
@@ -955,12 +972,19 @@ class DocxTowxRichTextCtrlParser:
             else:
                 pSpacingAfter = 0
 
+            pTabs = []
+            if len(p.paragraph_format.tab_stops) > 1:
+                for tab in p.paragraph_format.tab_stops:
+                    # Tab stops in the RichTextCtrl are stored in 1/10ths of a millimeter
+                    pTabs.append(int(tab.position / 3600.0))
+
             self.SetTxtStyle(parAlign = pParAlign,
                              parLeftIndent = (pParFirstLineIndent + pParLeftIndent, 0 - pParFirstLineIndent),
                              parRightIndent = pParRightIndent,
                              parLineSpacing = pLineSpacing,
                              parSpacingBefore = pSpacingBefore,
-                             parSpacingAfter = pSpacingAfter)
+                             parSpacingAfter = pSpacingAfter,
+                             parTabs = pTabs)
             
             for r in p.runs:
 
