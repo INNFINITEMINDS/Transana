@@ -261,6 +261,20 @@ class TranscriptPropertiesForm(Dialogs.GenForm):
                 self.obj.minTranscriptWidth = 0
             # Get the Media File to import
             fileName = d[_('DOCX/RTF/XML/TXT File to import  (optional)')]
+            # If no file to import is specified, see if there is a default template
+            if not fileName:
+                # Define potential default template options
+                fNames = ('default.xml', 'default.docx', 'default.rtf')
+                for fName in fNames:
+                    # ... build the Video Root default file name.
+                    fName = os.path.join(TransanaGlobal.configData.videoPath, fName)
+                    # If the default file exists ...
+                    if os.path.exists(fName):
+                        # ... we know the file name ...
+                        fileName = fName
+                        # ... and we should stop looking
+                        break
+                
             # If a media file is entered ...
             if fileName:
                 # Separate the path/filename from the file extension.  Extension is a proxy for file type.

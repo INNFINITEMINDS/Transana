@@ -407,34 +407,38 @@ class Transcript(DataObject.DataObject):
             comment = self.comment
             plaintext = self.plaintext
 
-        # If we have a NEW transcript and it HAS an ID and it is EMPTY ...
-        if (self.number == 0) and (self.id != "") and (len(self.text) == 0):
-            # ... build the Video Root default.xml file name.
-            fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.xml')
-            # If the XML default doesn't exist ...
-            if not os.path.exists(fname):
-                # ... build the Video Root default.rtf file name.
-                fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.rtf')
-
-            # If the default file exists ...
-            if os.path.exists(fname):
-                # ... start exception handling ...
-                try:
-                    # Open the file
-                    f = open(fname, "r")
-                    # Read the file straight into the Transcript Text
-                    self.text = f.read()
-                    # if the text does NOT have an RTF or XML header ...
-                    if (self.text[:5].lower() != '{\\rtf') and (self.text[:5].lower() != '<?xml'):
-                        # ... then it's NOT a legal default transcript and we shouldn't use it.
-                        self.obj.text = ''
-                    # Close the file
-                    f.close()
-                # If exceptions are raised ...
-                except:
-                    # ... we don't need to do anything here.  (Error message??)
-                    # The consequence is probably that the Transcript Text will be blank.
-                    pass
+##        # If we have a NEW transcript and it HAS an ID and it is EMPTY ...
+##        if (self.number == 0) and (self.id != "") and (len(self.text) == 0):
+##            # ... build the Video Root default.xml file name.
+##            fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.xml')
+##            # If the XML default doesn't exist ...
+##            if not os.path.exists(fname):
+##                # ... build the Video Root default.docx file name.
+##                fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.docx')
+##            # If the DOCx default doesn't exist ...
+##            if not os.path.exists(fname):
+##                # ... build the Video Root default.rtf file name.
+##                fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.rtf')
+##
+##            # If the default file exists ...
+##            if os.path.exists(fname):
+##                # ... start exception handling ...
+##                try:
+##                    # Open the file
+##                    f = open(fname, "r")
+##                    # Read the file straight into the Transcript Text
+##                    self.text = f.read()
+##                    # if the text does NOT have an RTF or XML header ...
+##                    if (self.text[:5].lower() != '{\\rtf') and (self.text[:5].lower() != '<?xml'):
+##                        # ... then it's NOT a legal default transcript and we shouldn't use it.
+##                        self.obj.text = ''
+##                    # Close the file
+##                    f.close()
+##                # If exceptions are raised ...
+##                except:
+##                    # ... we don't need to do anything here.  (Error message??)
+##                    # The consequence is probably that the Transcript Text will be blank.
+##                    pass
 
         if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
             raise SaveError, _("This transcript is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")

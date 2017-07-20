@@ -5214,7 +5214,12 @@ class _DBTreeCtrl(wx.TreeCtrl):
                             elif os.path.exists(os.path.join(TransanaGlobal.configData.videoPath, 'default.xml')):
                                 # If so, let's remember that.
                                 fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.xml')
-                            # If there's no default.xml file, see if a default.rtf file exists in the video
+                            # If there's no default.xml file, see if a default.docx file exists in the video root
+                            # directory
+                            elif os.path.exists(os.path.join(TransanaGlobal.configData.videoPath, 'default.docx')):
+                                # If so, let's remember that.
+                                fname = os.path.join(TransanaGlobal.configData.videoPath, 'default.docx')
+                            # If there's no default.docx file, see if a default.rtf file exists in the video
                             # root directory
                             elif os.path.exists(os.path.join(TransanaGlobal.configData.videoPath, 'default.rtf')):
                                 # If so, let's remember that.

@@ -221,3 +221,4 @@ images/Embedded/1_AddNew.bat
 SkipWords - en.txt
 *.nsh
 *.nsi
+unit_test_parsers.py
