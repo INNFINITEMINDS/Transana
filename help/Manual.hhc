@@ -236,12 +236,12 @@
            <param name="Local" value="MediaConvert.htm">
        </object>
   <li> <object type="text/sitemap">
-           <param name="Name" value="Export Database">
+           <param name="Name" value="Export Data">
            <param name="ID" value=450>
            <param name="Local" value="ExportDatabase.htm">
        </object>
   <li> <object type="text/sitemap">
-           <param name="Name" value="Import Database">
+           <param name="Name" value="Import Data">
            <param name="ID" value=460>
            <param name="Local" value="ImportDatabase.htm">
        </object>

@@ -68,7 +68,7 @@ class XMLImport(Dialogs.GenForm):
             the XML Import Dialog does not need to be displayed to the user. """
         # Create the Dialog Box
         Dialogs.GenForm.__init__(self, parent, id, title, (550,150), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-                                 useSizers = True, HelpContext='Import Database')
+                                 useSizers = True, HelpContext='Import Data')
 
         # Remember the import data, if any is passed
         self.importData = importData

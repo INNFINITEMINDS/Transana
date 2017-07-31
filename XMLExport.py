@@ -50,7 +50,7 @@ class XMLExport(Dialogs.GenForm):
     """ This window displays a variety of GUI Widgets. """
     def __init__(self,parent,id,title):
         Dialogs.GenForm.__init__(self, parent, id, title, (550,150), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-                                 useSizers = True, HelpContext='Export Database')
+                                 useSizers = True, HelpContext='Export Data')
 
         # If we're using the RichTextCtrl ...
         if TransanaConstants.USESRTC:

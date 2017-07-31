@@ -1,17 +1,17 @@
 <HTML>
 <HEAD>
-<TITLE>Import Database</TITLE>
+<TITLE>Import Data</TITLE>
 </HEAD>
 
 <BODY>
 
-<H1>Import Database</H1><HR>
+<H1>Import Data</H1><HR>
 
-The &quot;Import Database&quot; function in the Tools menu is intended to import data that is in Transana-XML format.  Such files are created by exporting Data from Transana 2.0 or higher using the &quot;<A HREF="exportdatabase.htm">Export Database</A>&quot; function or by using the Data Exporter tool to extract data from Transana 1.22 - 1.24.<P>
+The &quot;Import Data&quot; function in the Tools menu is intended to import data that is in Transana-XML format.  Such files are created by exporting Data from Transana 2.0 or higher using the &quot;<A HREF="exportdatabase.htm">Export Data</A>&quot; function or by using the Data Exporter tool to extract data from Transana 1.22 - 1.24.<P>
 
 Combining databases by importing several Transana-XML files into the same database is far more difficult that most people imagine, given the way most people work with Transana.  If two copies of the same data object differ, Transana has no way to determine which version, or which features within the two versions, are the more desirable ones.  Manual recociliation is impractical in this situation.<P>
 
-Therefore, Import Database only allows the import of database with no <A HREF="libraryproperties.htm">Library</A> or first-level <A HREF="collectionproperties.htm">Collection</A> records that overlap the data currently in the database.  If duplicate <A HREF="keywordproperties.htm">Keyword</A> or <A HREF="coredata.htm">Core Data records</A> are discovered, Transana will ignore the new record, retaining the existing Keyword or Core Data record even when those records differ.  <P>
+Therefore, Import Data only allows the import of database with no <A HREF="libraryproperties.htm">Library</A> or first-level <A HREF="collectionproperties.htm">Collection</A> records that overlap the data currently in the database.  If duplicate <A HREF="keywordproperties.htm">Keyword</A> or <A HREF="coredata.htm">Core Data records</A> are discovered, Transana will ignore the new record, retaining the existing Keyword or Core Data record even when those records differ.  Thus, it is possible to import Codebook exports into existing databases.<P>
 
 In addition, you may not be able to import data from versions of Transana released after the version you are using.  If you get an error message indicating that you need to upgrade your copy of Transana to be able to import a Transana-XML file, it is most likely because of changes to the Transana database structure and Transana-XML definition required by new features in the program.<P>
 
