@@ -222,3 +222,5 @@ SkipWords - en.txt
 *.nsh
 *.nsi
 unit_test_parsers.py
+setup310.py
+unit_test_parsers2.py

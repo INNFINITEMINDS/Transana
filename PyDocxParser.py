@@ -1007,6 +1007,11 @@ class DocxTowxRichTextCtrlParser:
                 else:
                     rFontUnderline = False
 
+                if r.font.color.rgb != None:
+                    txtColor = r.font.color.rgb.__str__()
+                else:
+                    txtColor = '000000'
+
                 if r.font.highlight_color != None:
 
                     bgColor = r.font.highlight_color
@@ -1021,7 +1026,7 @@ class DocxTowxRichTextCtrlParser:
                     bgColor = wx.Colour(255, 255, 255)
                 self.SetTxtStyle(fontFace = r.font.name, fontSize = rFontSize,
                                  fontBold = rFontBold, fontItalic = rFontItalic, fontUnderline = rFontUnderline,
-                                 fontColor = "#%s" % r.font.color.rgb.__str__(),
+                                 fontColor = "#%s" % txtColor,
                                  fontBgColor = bgColor)
 
                 hasHighlight_color = hasattr(r.font, 'highlight_color')

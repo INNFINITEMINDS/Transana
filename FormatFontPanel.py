@@ -611,7 +611,7 @@ class FormatFontPanel(wx.Panel):
         # Iterate through the color list ...
         for (color, colDef) in self.colorList:
             # ... and find the color that matches the choice box selection.
-            if 'unicode' in wx.PlatformInfo:
+            if ('unicode' in wx.PlatformInfo) and not (isinstance(_(color), unicode)):
                 color = unicode(_(color), 'utf8')
             else:
                 color = _(color)
