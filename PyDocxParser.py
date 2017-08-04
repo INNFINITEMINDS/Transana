@@ -195,7 +195,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
         self.fontAttributes = {}
         self.fontAttributes[u'text'] = {u'bgcolor' : '#FFFFFF',
                                     u'fontface' : 'Courier New',
-                                    u'fontpointsize' : 12,
+                                    u'fontpointsize' : 11,  # Word defaults to 11 pt, I believe
                                     u'fontstyle' : wx.FONTSTYLE_NORMAL,
                                     u'fontunderlined' : u'0',
                                     u'fontweight' : wx.FONTSTYLE_NORMAL,
@@ -203,7 +203,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
 
         self.fontAttributes[u'symbol'] = {u'bgcolor' : '#FFFFFF',
                                     u'fontface' : 'Courier New',
-                                    u'fontpointsize' : 12,
+                                    u'fontpointsize' : 11,  # Word defaults to 11 pt, I believe
                                     u'fontstyle' : wx.FONTSTYLE_NORMAL,
                                     u'fontunderlined' : u'0',
                                     u'fontweight' : wx.FONTSTYLE_NORMAL,
@@ -211,7 +211,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
 
         self.fontAttributes[u'paragraph'] = {u'bgcolor' : '#FFFFFF',
                                          u'fontface' : 'Courier New',
-                                         u'fontpointsize' : 12,
+                                         u'fontpointsize' : 11,  # Word defaults to 11 pt, I believe
                                          u'fontstyle' : wx.FONTSTYLE_NORMAL,
                                          u'fontunderlined' : u'0',
                                          u'fontweight' : wx.FONTSTYLE_NORMAL,
@@ -219,7 +219,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
 
         self.fontAttributes[u'paragraphlayout'] = {u'bgcolor' : '#FFFFFF',
                                                u'fontface' : 'Courier New',
-                                               u'fontpointsize' : 12,
+                                               u'fontpointsize' : 11,  # Word defaults to 11 pt, I believe
                                                u'fontstyle' : wx.FONTSTYLE_NORMAL,
                                                u'fontunderlined' : u'0',
                                                u'fontweight' : wx.FONTSTYLE_NORMAL,
@@ -233,7 +233,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
                                                   u'rightindent' : u'0',
                                                   u'leftsubindent' : u'0',
                                                   u'parspacingbefore' : u'0',
-                                                  u'parspacingafter' : u'0',
+                                                  u'parspacingafter' : u'35',  # Word defaults to 10pt, which is 35!
                                                   u'bulletnumber' : None,
                                                   u'bulletstyle' : None,
                                                   u'bulletfont' : None,
@@ -247,7 +247,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
                                                       u'rightindent' : u'0',
                                                       u'leftsubindent' : u'0',
                                                       u'parspacingbefore' : u'0',
-                                                      u'parspacingafter' : u'0',
+                                                      u'parspacingafter' : u'35',  # Word defaults to 10pt, which is 35!
                                                       u'bulletnumber' : None,
                                                       u'bulletstyle' : None,
                                                       u'bulletfont' : None,
@@ -548,9 +548,9 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
 
             # Add non-zero Spacing before and after paragraphs to the RTF output String
             if int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore']) != 0:
-                par_format.space_before = docx.shared.Mm(int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore']) / 10.0)
+                par_format.space_before = docx.shared.Mm(float(self.paragraphAttributes[u'paragraph'][u'parspacingbefore']) / 10.0)
             if int(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) > 0:
-                par_format.space_after = docx.shared.Mm(int(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) / 10.0)
+                par_format.space_after = docx.shared.Mm(float(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) / 10.0)
             # Due to a bug in the RichTextEditCtrl, the parspacingafter value may sometimes be NEGATIVE, which of course doesn't
             # make sense outside of the RichTextEditCtrl.  This adjusts for that.
             else:
@@ -773,7 +773,7 @@ class DocxTowxRichTextCtrlParser:
 
         # Create a default font specification.  I've chosen Courier New, 12 point, black on white,
         self.font = {'fontfacename'  :  'Courier New',
-                     'fontpointsize' :  12,
+                     'fontpointsize' :  11,  # Word defaults to 11 pt, I believe
                      'fontcolor'     :  wx.Colour(0, 0, 0),
                      'fontbgcolor'   :  wx.Colour(255, 255, 255)}
 
@@ -784,7 +784,7 @@ class DocxTowxRichTextCtrlParser:
                           'rightindent'     : 0,
                           'firstlineindent' : 0,
                           'spacingbefore'   : 0,
-                          'spacingafter'    : 0,
+                          'spacingafter'    : 35,  # Word defaults to 10pt, which is 35!
                           'tabs'            : []}
 
         # Create an object to hold font specifications for the current font
@@ -970,7 +970,7 @@ class DocxTowxRichTextCtrlParser:
             if p.paragraph_format.space_after != None:
                 pSpacingAfter = p.paragraph_format.space_after / 3556.0
             else:
-                pSpacingAfter = 0
+                pSpacingAfter = 35  # Word defaults to 10pt, which is 35!
 
             pTabs = []
             if len(p.paragraph_format.tab_stops) > 1:
@@ -991,8 +991,8 @@ class DocxTowxRichTextCtrlParser:
                 if r.font.size != None:
                     rFontSize = r.font.size / 12700
                 else:
-                    # None indicates no change!
-                    rFontSize = None
+                    # None indicates no change!  NO NONE MEANS USE WORD DEFAULT!!
+                    rFontSize = 11  # Word defaults to 11 pt, I believe
                     
                 if r.font.bold:
                     rFontBold = True
