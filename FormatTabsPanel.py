@@ -135,7 +135,7 @@ class FormatTabsPanel(wx.Panel):
                 value = float(value) / 254.0
             else:
                 value = float(value) / 100.0
-            valStr = "%4.2f" % value
+            valStr = "%05.2f" % value
         return valStr
 
     def OnAdd(self, event):
@@ -145,12 +145,14 @@ class FormatTabsPanel(wx.Panel):
             val = float(valStr)
         except:
             val = 0
-        if (val > 0) and (self.lbTabStops.FindString("%4.2f" % val) == -1):
+        if (val > 0) and (self.lbTabStops.FindString("%05.2f" % val) == -1):
             tmpItems = self.lbTabStops.GetItems()
-            tmpItems.append("%4.2f" % val)
+            tmpItems.append("%05.2f" % val)
             tmpItems.sort()
             self.lbTabStops.SetItems(tmpItems)
             self.txtAdd.SetValue('')
+        # Set focus to the Add field
+        self.txtAdd.SetFocus()
 
     def OnDelete(self, event):
         sels = self.lbTabStops.GetSelections()
@@ -170,7 +172,7 @@ class FormatTabsPanel(wx.Panel):
                 val = float(valStr) / 2.54
             else:
                 val = float(valStr) * 2.54
-            newList.append("%4.2f" % val)
+            newList.append("%05.2f" % val)
         self.lbTabStops.SetItems(newList)
 
     def OnNumOnly(self, event):
