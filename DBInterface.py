@@ -4387,7 +4387,7 @@ def list_of_external_files():
                 # ... add it to the filenames list to indicte is has now been checked ...
                 filenames.append(filename)
                 # ... and add it to the query results
-                result.append((filename, objType, objNum))
+                result.append((ProcessDBDataForUTF8Encoding(filename), objType, objNum))
     # Close the Database Cursor
     dbCursor.close()
     # Return the list of results
