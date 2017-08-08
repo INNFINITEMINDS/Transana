@@ -1514,21 +1514,22 @@ class FilterDialog(wx.Dialog):
 
                     # If the data is for the Documents Tab (filterDataType 19) ...
                     elif filterDataType == 19:
-                        # Get the current Document data from the Form
-                        formDocumentData = self.GetDocuments()
-                        # Get the Document data from the Database.
-                        # (If MySQLDB returns an Array, convert it to a String!)
-                        if type(filterData).__name__ == 'array':
-                            fileDocumentData = cPickle.loads(filterData.tostring())
-                        else:
-                            fileDocumentData = cPickle.loads(filterData)
-                        # Clear the Document List
-                        self.documentList.DeleteAllItems()
-                        # We need to compare the file data to the form data and reconcile differences,
-                        # then feed the results to the Documents Tab.
-                        self.SetDocuments(self.ReconcileLists(formDocumentData, fileDocumentData, listIsOrdered=False))
-                        # Note that we have reconciled Documents
-                        needToReconcileDocuments = False
+                        if TransanaConstants.proVersion:
+                            # Get the current Document data from the Form
+                            formDocumentData = self.GetDocuments()
+                            # Get the Document data from the Database.
+                            # (If MySQLDB returns an Array, convert it to a String!)
+                            if type(filterData).__name__ == 'array':
+                                fileDocumentData = cPickle.loads(filterData.tostring())
+                            else:
+                                fileDocumentData = cPickle.loads(filterData)
+                            # Clear the Document List
+                            self.documentList.DeleteAllItems()
+                            # We need to compare the file data to the form data and reconcile differences,
+                            # then feed the results to the Documents Tab.
+                            self.SetDocuments(self.ReconcileLists(formDocumentData, fileDocumentData, listIsOrdered=False))
+                            # Note that we have reconciled Documents
+                            needToReconcileDocuments = False
 
                     # If the data is for the Quotes Tab (filterDataType 20) ...
                     elif (filterDataType == 20):
@@ -1668,10 +1669,11 @@ class FilterDialog(wx.Dialog):
 
                     # If the data is for the Show Doc Import Date value (filterDataType 114) ...
                     elif (filterDataType == 114):
-                        if type(filterData).__name__ == 'array':
-                            filterData = filterData.tostring()
-                        # Set the Show Doc Import Date value
-                        self.showDocImportDate.SetValue((filterData == 'True') or (filterData == '1'))
+                        if TransanaConstants.proVersion:
+                            if type(filterData).__name__ == 'array':
+                                filterData = filterData.tostring()
+                            # Set the Show Doc Import Date value
+                            self.showDocImportDate.SetValue((filterData == 'True') or (filterData == '1'))
 
                     # If the data is for the Show Quote Notes value (filterDataType 115) ...
                     elif (filterDataType == 115):
@@ -2164,9 +2166,10 @@ class FilterDialog(wx.Dialog):
                         # If we have a Library Report (reportType 10)
                         # update Document Data (FilterDataType 19)
                         if self.reportType in [10]:
-                            # Pickle the Document Data
-                            documents = cPickle.dumps(self.GetDocuments())
-                            self.SaveFilterData(self.reportType, reportScope, configName, 19, documents)
+                            if TransanaConstants.proVersion:
+                                # Pickle the Document Data
+                                documents = cPickle.dumps(self.GetDocuments())
+                                self.SaveFilterData(self.reportType, reportScope, configName, 19, documents)
 
                         # If we have a Collection Report (reportType 12),
                         # a Document Keyword Map (reportType 17),
@@ -2243,7 +2246,8 @@ class FilterDialog(wx.Dialog):
                         # If we have a Library Report (reportType 10), 
                         # insert Show Document Import Date (Filter Data Type 114)
                         if self.reportType in [10]:
-                            self.SaveFilterData(self.reportType, reportScope, configName, 114, self.showDocImportDate.IsChecked())
+                            if TransanaConstants.proVersion:
+                                self.SaveFilterData(self.reportType, reportScope, configName, 114, self.showDocImportDate.IsChecked())
 
                         # If we have a Collection Report (reportType 12),
                         # a Document Report (reportType 19), 
