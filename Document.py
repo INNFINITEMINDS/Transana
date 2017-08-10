@@ -367,14 +367,20 @@ class Document(DataObject.DataObject):
                 imported_file = self.imported_file
                 plaintext = self.plaintext
 
-            if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
-                # If we're using transactions, start the transaction
-                if use_transactions:
-                    c.execute('ROLLBACK')
-                raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
+            # If we did not load the text, we cannot save it!
+            if self.skipText:
+                fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "LastSaveTime")
+                values = (id, self.library_num, author, comment, imported_file)
+            # If we loaded the text, we need to save it!
+            else:
+                if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
+                    # If we're using transactions, start the transaction
+                    if use_transactions:
+                        c.execute('ROLLBACK')
+                    raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
 
-            fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
-            values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text, plaintext)
+                fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
+                values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text, plaintext)
 
             if (self._db_start_save() == 0):
                 # Duplicate Document IDs within a Library are not allowed.
@@ -452,20 +458,35 @@ class Document(DataObject.DataObject):
                     if use_transactions:
                         c.execute('ROLLBACK')
                     raise SaveError, prompt % self.id
-                
-                # OK to update the episode record
-                query = """UPDATE Documents2
-                    SET DocumentID = %s,
-                        LibraryNum = %s,
-                        Author = %s,
-                        Comment = %s,
-                        ImportedFile = %s,
-                        DocumentLength = %s,
-                        XMLText = %s,
-                        PlainText = %s,
-                        LastSaveTime = CURRENT_TIMESTAMP
-                    WHERE DocumentNum = %s
-                """
+
+                # If we loaded the text, we should update it.
+                if not self.skipText:
+                    # OK to update the episode record
+                    query = """UPDATE Documents2
+                        SET DocumentID = %s,
+                            LibraryNum = %s,
+                            Author = %s,
+                            Comment = %s,
+                            ImportedFile = %s,
+                            DocumentLength = %s,
+                            XMLText = %s,
+                            PlainText = %s,
+                            LastSaveTime = CURRENT_TIMESTAMP
+                        WHERE DocumentNum = %s
+                    """
+                # If we did not load the text, we cannot update it.
+                else:
+                    # OK to update the episode record
+                    query = """UPDATE Documents2
+                        SET DocumentID = %s,
+                            LibraryNum = %s,
+                            Author = %s,
+                            Comment = %s,
+                            ImportedFile = %s,
+                            LastSaveTime = CURRENT_TIMESTAMP
+                        WHERE DocumentNum = %s
+                    """
+                # Add the Document Num to the query values
                 values = values + (self.number,)
 
                 if DEBUG:
@@ -476,54 +497,46 @@ class Document(DataObject.DataObject):
                     dlg.Destroy()
                 # Adjust the query for sqlite if needed
                 query = DBInterface.FixQuery(query)
-
                 # Execure the Save query
                 c.execute(query, values)
 
-                # We need to add the Start and End Character Position information 
-                # to the QuotePositions Table.  (A new Document won't have any Quotes yet.)
+                # If we loaded the text, we need to update Quote Positions.  If we didn't, we don't.
+                if not self.skipText:
 
-                # First, delete old data if it exists
-                query = "DELETE FROM QuotePositions2 WHERE DocumentNum = %s"
-                # Adjust the query for sqlite if needed
-                query = DBInterface.FixQuery(query)
-                # Execute the query
-                c.execute(query, (self.number, ))
-                # If there are Quotes in the Quote Dictionary ...
-                if len(self.quote_dict) > 0:
-                    # Add MySQL-specific bulk insert SQL
-                    if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
-                        query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
-                        values = ()
-                        for key in self.quote_dict.keys():
-                            query += "(%s, %s, %s, %s), "
-                            values += (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
-                        # Strip the final comma off the query!
-                        query = query[:-2]
-                        # Adjust the query for sqlite if needed
-                        query = DBInterface.FixQuery(query)
-                        # Execute the query
-                        c.execute(query, values)
-                    else:
+                    # We need to add the Start and End Character Position information 
+                    # to the QuotePositions Table.  (A new Document won't have any Quotes yet.)
 
-#                        print "Document.db_save():  QuotePositions not BULK inserted for sqlite yet!!"
-
-                        query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
-                        query += "(%s, %s, %s, %s) "
-                        for key in self.quote_dict.keys():
-                            values = (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
-
-#                            print
-#                            print
-#                            print "Document.db_save():"
-#                            print query
-#                            print values
-#                            print
-
+                    # First, delete old data if it exists
+                    query = "DELETE FROM QuotePositions2 WHERE DocumentNum = %s"
+                    # Adjust the query for sqlite if needed
+                    query = DBInterface.FixQuery(query)
+                    # Execute the query
+                    c.execute(query, (self.number, ))
+                    # If there are Quotes in the Quote Dictionary ...
+                    if len(self.quote_dict) > 0:
+                        # Add MySQL-specific bulk insert SQL
+                        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                            query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
+                            values = ()
+                            for key in self.quote_dict.keys():
+                                query += "(%s, %s, %s, %s), "
+                                values += (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
+                            # Strip the final comma off the query!
+                            query = query[:-2]
                             # Adjust the query for sqlite if needed
                             query = DBInterface.FixQuery(query)
                             # Execute the query
                             c.execute(query, values)
+                        else:
+
+                            query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
+                            query += "(%s, %s, %s, %s) "
+                            for key in self.quote_dict.keys():
+                                values = (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
+                                # Adjust the query for sqlite if needed
+                                query = DBInterface.FixQuery(query)
+                                # Execute the query
+                                c.execute(query, values)
 
             # If the object number is 0, we have a new object
             if self.number == 0:

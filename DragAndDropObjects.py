@@ -1513,8 +1513,8 @@ def DropKeyword(parent, sourceData, targetType, targetName, targetRecNum, target
             if TransanaConstants.proVersion:
                 # Now get a list of all Documents in the Library and iterate through them
                 for tempDocumentNum, tempDocumentID, tempLibraryNum in DBInterface.list_of_documents(tempLibrary.number):
-                    # Load the Document Record
-                    tempDocument = Document.Document(num=tempDocumentNum)
+                    # Load the Document Record.  Skip loading Text to make this process much faster for long Documents
+                    tempDocument = Document.Document(num=tempDocumentNum, skipText=True)
                     try:
                         # Lock the Document Record
                         tempDocument.lock_record()
@@ -1568,7 +1568,7 @@ def DropKeyword(parent, sourceData, targetType, targetName, targetRecNum, target
         # Handle "RecordLockedError" exception
         except TransanaExceptions.RecordLockedError, e:
             TransanaExceptions.ReportRecordLockedException(_('Libraries'), tempLibrary.id, e)
-    
+
     elif targetType == 'Document':
         # Prompt for confirmation if that is desired
         if confirmations:
