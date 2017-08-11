@@ -2258,7 +2258,8 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_INSERT_IMAGE, _("&Insert Image"))
         self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_PRINT, _("&Print"))
         self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_PRINTERSETUP, _("Printer &Setup"))
-        self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_ORIENTATION, _("Change Document Splitter Orientation"))
+        if TransanaConstants.proVersion:
+            self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_ORIENTATION, _("Change Document Splitter Orientation"))
         self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_AUTOTIMECODE, _("F&ixed-Increment Time Codes"))
         self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_ADJUSTINDEXES, _("&Adjust Indexes"))
         self.menuBar.transcriptmenu.SetLabel(MenuSetup.MENU_TRANSCRIPT_TEXT_TIMECODE, _("Text Time Code Conversion"))

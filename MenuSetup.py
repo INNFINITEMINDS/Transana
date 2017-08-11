@@ -206,7 +206,8 @@ class MenuSetup(wx.MenuBar):
         #     with Unicode at this point.
         # Let's just disable it completely for now.
         # self.transcriptmenu.Append(MENU_TRANSCRIPT_CHARACTERMAP, _("&Character Map"))
-        self.transcriptmenu.Append(MENU_TRANSCRIPT_ORIENTATION, _("Change Document Splitter Orientation"))
+        if TransanaConstants.proVersion:
+            self.transcriptmenu.Append(MENU_TRANSCRIPT_ORIENTATION, _("Change Document Splitter Orientation"))
         self.transcriptmenu.Append(MENU_TRANSCRIPT_AUTOTIMECODE, _("F&ixed-Increment Time Codes"))
         self.transcriptmenu.Append(MENU_TRANSCRIPT_TEXT_TIMECODE, _("Text Time Code Conversion"))
         self.transcriptmenu.Append(MENU_TRANSCRIPT_ADJUSTINDEXES, _("&Adjust Indexes"))
