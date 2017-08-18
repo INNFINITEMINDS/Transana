@@ -34,6 +34,8 @@ if __name__ == '__main__':
     # This module expects i18n.  Enable it here.
     __builtins__._ = wx.GetTranslation
 
+# Import Transana's Batch File Processor
+import BatchFileProcessor
 # Import Transana's Clip Object
 import Clip
 # Import Transana's Dialogs
@@ -1323,6 +1325,8 @@ class VisualizationWindow(wx.Dialog):
         self.redrawWhenIdle = False
         # Initialize a list structure to hold wave file information
         self.waveFilename = []
+        # Initialize a list of files that need audio extraction
+        fileList = []
         try:
             # Let's assume that audio extraction worked.  Signal success!
             dllvalue = 0                                
@@ -1330,125 +1334,177 @@ class VisualizationWindow(wx.Dialog):
             if not os.path.exists(TransanaGlobal.configData.visualizationPath):
                 # (os.makedirs is a recursive call to create ALL needed folders!)
                 os.makedirs(TransanaGlobal.configData.visualizationPath)
-            # Initialize a result for the Waveform prompt
-            result = wx.ID_NO
+##            # Initialize a result for the Waveform prompt
+##            result = wx.ID_NO
             # Let's do audio extraction of all the files first
             for filenameItem in filenameList:
-                # Separate path and filename
-                (path, filename) = os.path.split(filenameItem['filename'])
-                # break filename into root filename and extension
-                (filenameroot, extension) = os.path.splitext(filename)
-                # Build the correct filename for the Wave File
-                waveFilename = os.path.join(TransanaGlobal.configData.visualizationPath, filenameroot + '.wav')
+                # For each file, get the wavefile name and whether it aleady exists
+                (waveFilename, waveFileExists) = Misc.GetWavefileName(filenameItem['filename'])
                 # Add information to the Waveform Filename list.  Offsets get adjusted for the largest negative value, so they are all 0 or higher!
                 self.waveFilename.append({'filename' : waveFilename, 'offset' : filenameItem['offset'] + abs(minVal), 'length' : filenameItem['length']})
-                # Create a Wave File if none exists!
-                if not(os.path.exists(waveFilename)):
-                    # The user only needs to say Yes once, but will be asked for each file if they say No.  See if they've already said Yes.
-                    if result != wx.ID_YES:
+                # If the file does not already have a wave file ... 
+                if not waveFileExists:
+                    # ... add it to the list of files that need wave files
+                    fileList.append(filenameItem['filename'])
 
-                        # This totally sucks.
-                        #
-                        # If I have a Document loaded and go to load an Episode/Transcript that has not been
-                        # thought audio extraction, the "dlg.LocalShowModal()" call below causes
-                        # self.ControlObject.currentObj to become None.  I have *NO* idea why, other than a
-                        # vague sense that there must be a memory leak somehow.  It's not caused by the act
-                        # of audio extraction, as it still happens if you choose NOT to extract.  The problem
-                        # also still occurs if you skip creation of the QuestionDialog entirely.  It is also
-                        # cross-platform.  This is all most puzzling.
-                        #
-                        # The solution I have found is to create a copy of the object, and to restore
-                        # self.ControlObject.currentObj from that copy following the destruction of the
-                        # dialog.  I apologize to the programming Gods for this kludge.
 
-                        tmpObj = self.ControlObject.currentObj
-                        # Politely ask the user to create the waveform
-                        dlg = Dialogs.QuestionDialog(self, _("No wave file exists.  Would you like to create one now?"), _("Transana Wave File Creation"))
-                        # Remember the results.
-                        result = dlg.LocalShowModal()
-                        # Destroy the Dialog that asked to create the Wave file    
-                        dlg.Destroy()
-                        # If self.ControlObject.currentObj has been mysteriously wiped out ...
-                        if self.ControlObject.currentObj == None:
-                            # ... restore it.
-                            self.ControlObject.currentObj = tmpObj
-                    # If the user says Yes, we do audio extraction.
-                    if result == wx.ID_YES:
-                        try:
+## THIS OLD CODE is left in place in case I need to resurrect the second-round audio extration process that it includes.
+##
+##                # Create a Wave File if none exists!
+##                if not(os.path.exists(waveFilename)):
+##                    # The user only needs to say Yes once, but will be asked for each file if they say No.  See if they've already said Yes.
+##                    if result != wx.ID_YES:
+##
+##                        # This totally sucks.
+##                        #
+##                        # If I have a Document loaded and go to load an Episode/Transcript that has not been
+##                        # thought audio extraction, the "dlg.LocalShowModal()" call below causes
+##                        # self.ControlObject.currentObj to become None.  I have *NO* idea why, other than a
+##                        # vague sense that there must be a memory leak somehow.  It's not caused by the act
+##                        # of audio extraction, as it still happens if you choose NOT to extract.  The problem
+##                        # also still occurs if you skip creation of the QuestionDialog entirely.  It is also
+##                        # cross-platform.  This is all most puzzling.
+##                        #
+##                        # The solution I have found is to create a copy of the object, and to restore
+##                        # self.ControlObject.currentObj from that copy following the destruction of the
+##                        # dialog.  I apologize to the programming Gods for this kludge.
+##
+##                        tmpObj = self.ControlObject.currentObj
+##                        # Politely ask the user to create the waveform
+##                        dlg = Dialogs.QuestionDialog(self, _("No wave file exists.  Would you like to create one now?"), _("Transana Wave File Creation"))
+##                        # Remember the results.
+##                        result = dlg.LocalShowModal()
+##                        # Destroy the Dialog that asked to create the Wave file    
+##                        dlg.Destroy()
+##                        # If self.ControlObject.currentObj has been mysteriously wiped out ...
+##                        if self.ControlObject.currentObj == None:
+##                            # ... restore it.
+##                            self.ControlObject.currentObj = tmpObj
+##                    # If the user says Yes, we do audio extraction.
+##                    if result == wx.ID_YES:
+##                        try:
+##
+##                            # NOTE:  We can't use multi-threaded audio extraction here, as it is non-modal,
+##                            #        and we need this to be modal.  That is, we want further processing
+##                            #        blocked here until the audio extraction is DONE.
+##                            
+##                            # Build the progress box's label
+##                            if 'unicode' in wx.PlatformInfo:
+##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+##                                prompt = unicode(_("Extracting %s\nfrom %s"), 'utf8')
+##                            else:
+##                                prompt = _("Extracting %s\nfrom %s")
+##                            # Create the Waveform Progress Dialog
+##                            self.progressDialog = WaveformProgress.WaveformProgress(self, prompt % (waveFilename, filenameItem['filename']))
+##                            # Tell the Waveform Progress Dialog to handle the audio extraction modally.
+##                            self.progressDialog.Extract(filenameItem['filename'], waveFilename)
+##                            # Get the Error Log that may have been created
+##                            errorLog = self.progressDialog.GetErrorMessages()
+##                            # Okay, we're done with the Progress Dialog here!
+##                            self.progressDialog.Destroy()
+##                            # If the user cancelled the audio extraction ...
+##                            if (len(errorLog) == 1) and (errorLog[0] == 'Cancelled'):
+##                                # ... signal that the WAV file was NOT created!
+##                                dllvalue = 1  
+##
+##                            # On Windows only, some Unicode files fail the standard audio extraction process because of the unicode
+##                            # file names.  Let's try to detect that and if we do, let's re-run audio extraction using the OLD method!
+##
+##                            # First, see if the waveform file is NOT created.
+##                            elif not os.path.exists(waveFilename):
+##                                # If not, re-call audio extraction with the old audio extraction method
+##                                # Create the Waveform Progress Dialog
+##                                self.progressDialog = WaveformProgress.WaveformProgress(self, prompt % (waveFilename, filenameItem['filename']))
+##                                # Tell the Waveform Progress Dialog to handle the audio extraction modally.
+##                                self.progressDialog.Extract(filenameItem['filename'], waveFilename, mode='AudioExtraction-OLD')
+##                                # Get the Error Log that may have been created
+##                                errorLog = self.progressDialog.GetErrorMessages()
+##                                # Okay, we're done with the Progress Dialog here!
+##                                self.progressDialog.Destroy()
+##                                # If the user cancelled the audio extraction ...
+##                                if (len(errorLog) == 1) and (errorLog[0] == 'Cancelled'):
+##                                    # ... signal that the WAV file was NOT created!
+##                                    dllvalue = 1
+##                            # On OS X, if you do extraction from a multi-media Episode, Transana will crash soon after.  (eg. create Quick Clip.)
+##                            # This appears to prevent that!!
+##                            wx.YieldIfNeeded()
+##                                
+##                        except UnicodeDecodeError:
+##                            if DEBUG:
+##                                import traceback
+##                                traceback.print_exc(file=sys.stdout)
+##
+##                            if 'unicode' in wx.PlatformInfo:
+##                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+##                                prompt = unicode(_('Unicode Decode Error:  %s : %s'), 'utf8')
+##                            else:
+##                                prompt = _('Unicode Decode Error:  %s : %s')
+##                            errordlg = Dialogs.ErrorDialog(self, prompt % (sys.exc_info()[0], sys.exc_info()[1]))
+##                            errordlg.ShowModal()
+##                            errordlg.Destroy()
+##                            dllvalue = 1  # Signal that the WAV file was NOT created!                        
+##
+##                        except:
+##                            if DEBUG:
+##                                import traceback
+##                                traceback.print_exc(file=sys.stdout)
+##
+##                            dllvalue = 1  # Signal that the WAV file was NOT created!                        
+##
+##                            # Close the Progress Dialog when the DLL call is complete
+##                            self.progressDialog.Close()
+##
+##                    else:
+##                        # User declined to create the WAV file now
+##                        dllvalue = 1  # Signal that the WAV file was NOT created!
 
-                            # NOTE:  We can't use multi-threaded audio extraction here, as it is non-modal,
-                            #        and we need this to be modal.  That is, we want further processing
-                            #        blocked here until the audio extraction is DONE.
-                            
-                            # Build the progress box's label
-                            if 'unicode' in wx.PlatformInfo:
-                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                                prompt = unicode(_("Extracting %s\nfrom %s"), 'utf8')
-                            else:
-                                prompt = _("Extracting %s\nfrom %s")
-                            # Create the Waveform Progress Dialog
-                            self.progressDialog = WaveformProgress.WaveformProgress(self, prompt % (waveFilename, filenameItem['filename']))
-                            # Tell the Waveform Progress Dialog to handle the audio extraction modally.
-                            self.progressDialog.Extract(filenameItem['filename'], waveFilename)
-                            # Get the Error Log that may have been created
-                            errorLog = self.progressDialog.GetErrorMessages()
-                            # Okay, we're done with the Progress Dialog here!
-                            self.progressDialog.Destroy()
-                            # If the user cancelled the audio extraction ...
-                            if (len(errorLog) == 1) and (errorLog[0] == 'Cancelled'):
-                                # ... signal that the WAV file was NOT created!
-                                dllvalue = 1  
 
-                            # On Windows only, some Unicode files fail the standard audio extraction process because of the unicode
-                            # file names.  Let's try to detect that and if we do, let's re-run audio extraction using the OLD method!
 
-                            # First, see if the waveform file is NOT created.
-                            elif not os.path.exists(waveFilename):
-                                # If not, re-call audio extraction with the old audio extraction method
-                                # Create the Waveform Progress Dialog
-                                self.progressDialog = WaveformProgress.WaveformProgress(self, prompt % (waveFilename, filenameItem['filename']))
-                                # Tell the Waveform Progress Dialog to handle the audio extraction modally.
-                                self.progressDialog.Extract(filenameItem['filename'], waveFilename, mode='AudioExtraction-OLD')
-                                # Get the Error Log that may have been created
-                                errorLog = self.progressDialog.GetErrorMessages()
-                                # Okay, we're done with the Progress Dialog here!
-                                self.progressDialog.Destroy()
-                                # If the user cancelled the audio extraction ...
-                                if (len(errorLog) == 1) and (errorLog[0] == 'Cancelled'):
-                                    # ... signal that the WAV file was NOT created!
-                                    dllvalue = 1
-                            # On OS X, if you do extraction from a multi-media Episode, Transana will crash soon after.  (eg. create Quick Clip.)
-                            # This appears to prevent that!!
-                            wx.YieldIfNeeded()
-                                
-                        except UnicodeDecodeError:
-                            if DEBUG:
-                                import traceback
-                                traceback.print_exc(file=sys.stdout)
+            # If there are files that need audio extraction ...
+            if len(fileList) > 0:
 
-                            if 'unicode' in wx.PlatformInfo:
-                                # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                                prompt = unicode(_('Unicode Decode Error:  %s : %s'), 'utf8')
-                            else:
-                                prompt = _('Unicode Decode Error:  %s : %s')
-                            errordlg = Dialogs.ErrorDialog(self, prompt % (sys.exc_info()[0], sys.exc_info()[1]))
-                            errordlg.ShowModal()
-                            errordlg.Destroy()
-                            dllvalue = 1  # Signal that the WAV file was NOT created!                        
 
-                        except:
-                            if DEBUG:
-                                import traceback
-                                traceback.print_exc(file=sys.stdout)
+                # This totally sucks.
+                #
+                # If I have a Document loaded and go to load an Episode/Transcript that has not been
+                # thought audio extraction, the "dlg.LocalShowModal()" call below causes
+                # self.ControlObject.currentObj to become None.  I have *NO* idea why, other than a
+                # vague sense that there must be a memory leak somehow.  It's not caused by the act
+                # of audio extraction, as it still happens if you choose NOT to extract.  The problem
+                # also still occurs if you skip creation of the QuestionDialog entirely.  It is also
+                # cross-platform.  This is all most puzzling.
+                #
+                # The solution I have found is to create a copy of the object, and to restore
+                # self.ControlObject.currentObj from that copy following the destruction of the
+                # dialog.  I apologize to the programming Gods for this kludge.
 
-                            dllvalue = 1  # Signal that the WAV file was NOT created!                        
+                tmpObj = self.ControlObject.currentObj
+                # Politely ask the user to create the waveform
+                dlg = Dialogs.QuestionDialog(self, _("No wave file exists.  Would you like to create one now?"), _("Transana Wave File Creation"))
+                # Remember the results.
+                result = dlg.LocalShowModal()
+                # Destroy the Dialog that asked to create the Wave file    
+                dlg.Destroy()
+                # If self.ControlObject.currentObj has been mysteriously wiped out ...
+                if self.ControlObject.currentObj == None:
+                    # ... restore it.
+                    self.ControlObject.currentObj = tmpObj
 
-                            # Close the Progress Dialog when the DLL call is complete
-                            self.progressDialog.Close()
 
-                    else:
-                        # User declined to create the WAV file now
-                        dllvalue = 1  # Signal that the WAV file was NOT created!
+                # If the user says Yes, we do audio extraction.
+                if result == wx.ID_YES:
+                    # Flag that we are beginning Audio Extraction so the waveform will present the appropriate message
+                    self.waveform.extractingAudio = True
+                    # ... send the list of files to the Batch Waveform Generator
+                    tmpDlg = BatchFileProcessor.BatchFileProcessor(self, 'waveform', fileList)
+                    # Batch Waveform Generation will operate without showing the form, and will call OnConvertComplete() when finished.
+                    tmpDlg.get_input()
+
+            # If there are no files to extract ...
+            else:
+                # ... then move on to synchronization by signalling that all conversions are complete.
+                self.OnConvertComplete()
+
         except:
             if DEBUG:
                 import traceback
@@ -1477,9 +1533,25 @@ class VisualizationWindow(wx.Dialog):
             # break filename into root filename and extension
             (filenameroot, extension) = os.path.splitext(filename)
 
+
+    def OnConvertComplete(self):
+        # We had previously signalled that Audio Extraction was occurring.  That's over, so we can remove the signal.
+        self.waveform.extractingAudio = False
+
         # If we're in Hybrid mode, clear the visualization to prevent waveform contamination!
         if self.VisualizationType == 'Hybrid':
             self.ClearVisualization()
+
+        # If we have an Episode object ...
+        if isinstance(self.VisualizationObject, Episode.Episode):
+            # ... not the mediaStart and mediaLength
+            mediaStart  = 0
+            mediaLength = self.VisualizationObject.tape_length
+        # If we have a Clip ...
+        elif isinstance(self.VisualizationObject, Clip.Clip):
+            # ... not the mediaStart and mediaLength
+            mediaStart = isualizationObject.clip_start
+            mediaLength = visualizationObject.clip_stop - visualizationObject.clip_start
 
         # Now that audio extraction is complete, signal that it's time to draw the Waveform Diagram during
         # Idle time.

@@ -2598,7 +2598,16 @@ class KeywordMap(wx.Frame):
         # If we are doing a Keyword Visualization, but there are no Clips in the picture, it can be confusing.
         # Let's place a message on the visualization saying it's intentionally left blank.
         if self.embedded and (lastclip == 0) and (lastsnapshot == 0) and (lastQuote == 0):
-            self.graphic.AddText(_("No keywords meet the visualization display criteria."), 5, self.CalcY(0))
+            # If there is no other message, OR we're displaying the keyword Visualization below the top of the graphic space ...
+            if (len(self.graphic.text) == 0) or (self.topOffset > 0):
+                # ... place the message where the first keyword would go
+                yPos = self.CalcY(0)
+            # If there IS another message ...
+            else:
+                # ... move this message down to make space for it.
+                yPos = self.CalcY(0) + 20
+            # Now place the message on the graphic
+            self.graphic.AddText(_("No keywords meet the visualization display criteria."), 5, yPos)
                     
         # let's add the overlap boundary lines now
         self.graphic.SetThickness(1)

@@ -131,6 +131,8 @@ class GraphicsControl(wx.ScrolledWindow):
         self.pixelList = []
         # Initialize the drawing buffer
         self.InitBuffer()
+        # Initialize a flag for the special case of audio extraction in progress
+        self.extractingAudio = False
 
         # If free-hand drawing is enabled, intialize the drawing flag and cursor and define the related events
         if drawEnabled:
@@ -188,6 +190,9 @@ class GraphicsControl(wx.ScrolledWindow):
         self.cursorPosition = None
         # Remove all text
         self.text = []
+        # If we are in the midst of extracting audio, we want to retain the text that says so!
+        if self.extractingAudio:
+            self.AddText(_('Please wait ...'), 5, 5)
         # if reset is true (always except Hybrid Visualization) ...
         if reset:
             # ... remove background graphic

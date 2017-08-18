@@ -47,12 +47,19 @@ ID_PROCESSTIMER = wx.NewId()
 
 class BatchFileProcessor(Dialogs.GenForm):
     """ Batch File Processor, used for Batch Waveform Generator and Batch Episode Creation """
-    def __init__(self, parent, mode):
+    def __init__(self, parent, mode, filenames = []):
         """ Initialize the Batch Waveform Generator form.  "mode" is waveform" for the
             Batch Waveform Generator, "episode" for the Batch Episode Creation routine,
-            or "snapshot" fo Batch Snapshot Creation. """
+            "document" for Batch Document Creation, or "snapshot" fo Batch Snapshot Creation.
+            The filenames parameter is a list of files to go through audio extraction automatically.
+            When filename is passed, this routine operates without a visible interface, and calls
+            self.parent.OnConvertComplete() when all conversions are finished. """
+        # Remember the parent.
+        self.parent = parent
         # Remember the mode passed in.
         self.mode = mode
+        # Remember the list of file names passed in
+        self.filenames = filenames
         # Based on the mode passed in, set the title and help context for the File Selection form
         if self.mode == 'waveform':
             formTitle = _('Batch Waveform Generator')
@@ -146,7 +153,7 @@ class BatchFileProcessor(Dialogs.GenForm):
         r3Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Create the List of Files listbox
-        self.fileList = wx.ListBox(self.panel, -1, style=wx.LB_MULTIPLE)
+        self.fileList = wx.ListBox(self.panel, -1, choices=filenames, style=wx.LB_MULTIPLE)
         # Add the element to the sizer
         r3Sizer.Add(self.fileList, 1, wx.EXPAND)
 
@@ -207,8 +214,14 @@ class BatchFileProcessor(Dialogs.GenForm):
 
     def get_input(self):
         """ Get the Input values from the Batch Waveform Generator form and process the selected files """
-        # Show the form and get the user response to the form.
-        val = self.ShowModal()
+        # If NO filenames were passed in ...
+        if len(self.filenames) == 0:
+            # ... show the form and get the user response to the form.
+            val = self.ShowModal()
+        # If filenames were passed in, we do NOT show the form.
+        else:
+            # Just pretend the user clicked OK.
+            val = wx.ID_OK
         # Get the File List data from the form
         data = self.fileList.GetStrings()
         # If the user pressed OK and there are files in the list ...
@@ -287,6 +300,10 @@ class BatchFileProcessor(Dialogs.GenForm):
         del(self.runningConversions[progressDlg.indexNum])
         # If we have NO MORE running conversions ...
         if len(self.runningConversions) == 0:
+            # if filenames were passed in ...
+            if len(self.filenames) > 0:
+                # ... signal completion of the last conversion, but only after the form is closed.
+                wx.CallAfter(self.parent.OnConvertComplete)
             # Close and destroy the Batch File Processor
             self.Close()
 

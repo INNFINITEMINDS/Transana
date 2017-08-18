@@ -65,7 +65,7 @@ class Synchronize(wx.Dialog):
         # Remember the original offset
         self.offset = offset
         # Initialize a Dialog Box
-        wx.Dialog.__init__(self, parent, -1, _("Synchronize Media Files"), size = (880, 640),
+        wx.Dialog.__init__(self, parent, -1, _("Synchronize Media Files"), size = (990, 640),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         # Freeze the dialog.  This prevents screen updates, speeding up the creation process.
         self.Freeze()
@@ -991,18 +991,17 @@ class Synchronize(wx.Dialog):
     # Synchronize Routines
 
     def LoadWaveform(self, mediaFile):
-        """ Load a Waveform, based on the mediaFile, into the GraphicControl """
-        # Separate the path from the file name
-        (path1, fn1) = os.path.split(mediaFile)
-        # Separate the file name from the extension
-        (fnroot1, ext1) = os.path.splitext(fn1)
+        """ Load a Waveform, based on the mediaFile, into the GraphicControl.
+            BUT WE SHOULD MAKE SURE AUDIO EXTRACTION IS COMPLETE BEFORE CALLING SYNCHRONIZE!
+            This routine causes a crash when a Transcript is subsequently imported if we
+            do multiple audio extractions here! """
         # Determine the correct WAV file name
-        waveFilename1 = os.path.join(TransanaGlobal.configData.visualizationPath, fnroot1 + '.wav')
+        (waveFilename1, waveFileExists) = Misc.GetWavefileName(mediaFile)
 
         # We just have to assume that audio extraction worked.  Signal success!
         dllvalue = 0
         # If the WAV file does NOT exist, we need to do Audio Extraction.
-        if not os.path.exists(waveFilename1):
+        if not waveFileExists:
             # Start Exception Handling
             try:
                 # If the Waveforms Directory does not exist, create it.
@@ -1017,7 +1016,7 @@ class Synchronize(wx.Dialog):
                 else:
                     prompt = _("Extracting %s\nfrom %s")
                 # Create the Waveform Progress Dialog
-                progressDialog = WaveformProgress.WaveformProgress(self, prompt % (waveFilename1, mediaFile))
+                progressDialog = WaveformProgress.WaveformProgress(None, prompt % (waveFilename1, mediaFile))
                 # Tell the Waveform Progress Dialog to handle the audio extraction modally.
                 progressDialog.Extract(mediaFile, waveFilename1)
                 # Get the Error Log that may have been created

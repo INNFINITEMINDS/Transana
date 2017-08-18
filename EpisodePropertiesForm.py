@@ -19,6 +19,8 @@ Objects."""
 
 __author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 
+# Import Transana's Batch File Processor
+import BatchFileProcessor
 import DBInterface
 import Dialogs
 import KWManager
@@ -546,6 +548,33 @@ class EpisodePropertiesForm(Dialogs.GenForm):
 
     def OnSynchronize(self, event):
         """ Synchronize Media Files """
+        # Actually, before we synchronize the files, we need to make sure Audio Extraction is complete.
+        # This uses the Batch File Processor (Batch Waveform Generator) to accomplish this task.  One
+        # advantage of this is that we can extract multiple files at once.  The other advantage is that
+        # Transana no longer crashes following multiple audio extractions when a new Transcript is imported.
+
+        # Initialize a list of files that need audio extraction
+        fileList = []
+        # For each file in the list of media files ...
+        for x in range(self.fname_lb.GetCount()):
+            # ... check to see if the WAV file already exists.  If NOT ...
+            if not Misc.GetWavefileName(self.fname_lb.GetString(x))[1]:
+                # ... then add the file to the list of files that need audio extraction
+                fileList.append(self.fname_lb.GetString(x))
+
+        # If there are files that need audio extraction ...
+        if len(fileList) > 0:
+            # ... send the list of files to the Batch Waveform Generator
+            tmpDlg = BatchFileProcessor.BatchFileProcessor(self, 'waveform', fileList)
+            # Batch Waveform Generation will operate without showing the form, and will call OnConvertComplete() when finished.
+            tmpDlg.get_input()
+        # If there are no files to extract ...
+        else:
+            # ... then move on to synchronization by signalling that all conversions are complete.
+            self.OnConvertComplete()
+
+    def OnConvertComplete(self):
+        """ When all audio extractions are complete, call the Synchronization form! """
         # Determine the index of the selection in the file name list
         indx = self.fname_lb.GetSelection()
         # If there is no selection and there are exactly two files, synchronize them!

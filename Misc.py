@@ -21,7 +21,8 @@ __author__ = 'David Woods <dwoods@transana.com>, Nathaniel Case'
 # Patch sent by David Fraser to eliminate need for mx module
 
 #import mx.DateTime
-import string, sys
+import os, string, sys
+import TransanaGlobal
 
 #def datestr_to_dt(datestr):
 #    """Construct a DateTime object from a given date string.  This function
@@ -211,6 +212,18 @@ def convertMacFilename(filename):
 
     filename = filename.replace(unichr(121) + unichr(776), unichr(255))  # y with Umlaut
     return filename
+
+
+def GetWavefileName(mediaFile):
+    """ Given a media file name, form the correct wave file name and see if that file already exists. """
+    # Separate the path from the file name
+    (path1, fn1) = os.path.split(mediaFile)
+    # Separate the file name from the extension
+    (fnroot1, ext1) = os.path.splitext(fn1)
+    # Determine the correct WAV file name
+    waveFilename = os.path.join(TransanaGlobal.configData.visualizationPath, fnroot1 + '.wav')
+    # Return the file name and whether it exists
+    return waveFilename, os.path.exists(waveFilename)
 
 
 # There a problem in Python using string.strip() with strings encoded with UTF-8.
