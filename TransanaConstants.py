@@ -102,6 +102,9 @@ else:
 # or the (new) wxPython Rich Text Control (RTC)
 USESRTC = True
 
+# Indicates whether the Qualitative Data Exchange (QDE-XML) format is active
+QDE_XML = False
+
 # Indicate if the Partial Transcript Editing fix should be applied
 partialTranscriptEdit = False
 

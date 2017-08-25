@@ -1404,12 +1404,22 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         result = temp.get_input()
         # If the user gave a valid response ...
         if (result != None) and (result[_("Filename")] != ''):
+            # Split the file name into name and extenstion
+            fn, ext = os.path.splitext(result[_("Filename")])
+            # Cast the extension into lower case
+            ext = ext.lower()
             # See if there's a Notes Browser open
             if self.ControlObject.NotesBrowserWindow != None:
                 # If so, close it, which saves anything being edited.
                 self.ControlObject.NotesBrowserWindow.Close()
-            # ... Import the requested data!
-            temp.Import()
+            # If the file extension is for Qualitative Data Exchange ...
+            if ext == '.qde':
+                # ... request the Qualitative Data Exchange form of the import
+                temp.QDEImport()
+            # if the file extension is NOT for QDE (probably .TRA or .XML) ... 
+            else:
+                # ... Import the requested data in Transana-XML format!
+                temp.Import()
             # If MU, we need to signal other copies that we've imported a database!
             # First, test to see if we're in the Multi-user version.
             if not TransanaConstants.singleUserVersion:
@@ -1450,7 +1460,7 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             result = temp.get_input()
             # if the user clicked OK ...
             if result != None:
-                result['Format'] = temp.formatCtrl.GetSelection()
+                # Get the value of the export scope, either full database or codebook
                 result['Content'] = temp.contentCtrl.GetSelection()
                 # ... make sure they entered a file name.
                 if result[_("Filename")] == '':
@@ -1467,18 +1477,6 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                     # If there is a path, just continue.
                     else:
                         fileName = result[_("Filename")]
-                    # For Transana-XML files ...
-                    if result['Format'] == 0:
-                        # If the file does not have a .TRA extension ...
-                        if fileName[-4:].lower() != '.tra':
-                            # ... add one
-                            fileName = fileName + '.tra'
-                    # For QDA-XML files ...
-                    elif result['Format'] == 1:
-                        # If the file does not have a .QDE extension ...
-                        if fileName[-4:].lower() != '.qde':
-                            # ... add one
-                            fileName = fileName + '.qde'
                     # Set the FORM's field value to the modified file name
                     temp.XMLFile.SetValue(fileName)
 
@@ -1527,22 +1525,27 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
 
         # If the user requests it ...
         if (result != None) and (result[_("Filename")] != ''):
+            # Get the file name from the form
+            filename = result[_("Filename")]
+            # Split the filename into filename and extension
+            fn, ext = os.path.splitext(filename)
+            # Cast the extension as lower case
+            ext = ext.lower()
             # For Transana-XML Export ...
-            if temp.formatCtrl.GetSelection() == 0:
-                # ... export the data in Transana-XML format
+            if ext == '.tra':
+                # ... export the data in Transana-XML format (XML extension no longer used.)
                 temp.Export()
-            # For QDA-XML Export ...
-            elif temp.formatCtrl.GetSelection() == 1:
-
-                # QDA-XML export of full databases is not yet available.
+            # For QDE-XML Export ...
+            elif ext == '.qde':
+                # QDE-XML export of full databases is not yet available.
                 if temp.contentCtrl.GetSelection() == 0:
-                    errDlg = Dialogs.ErrorDialog(self, u'Full Database Export in QDA-XML format is not yet avaialble.')
+                    errDlg = Dialogs.ErrorDialog(self, u'Full Database Export in QDE-XML format is not yet avaialble.')
                     errDlg.ShowModal()
                     errDlg.Destroy()
+                # If Codebook Export is requested
                 elif temp.contentCtrl.GetSelection() == 1:
-                    
-                # ... export the data in QDA-XML format
-                    temp.QDAExport()
+                    # ... export the Codebook data in QDE-XML format
+                    temp.QDEExport()
         # Close the Export Database dialog
         temp.Close()
 

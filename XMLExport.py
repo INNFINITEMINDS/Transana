@@ -46,6 +46,9 @@ import sys
 EXPORT_ENCODING = 'utf8'
 ENCODE_PROPERLY = True
 
+# FLAG for including or excluding the QDE-XML export options
+QDE_XML_ENABLED = TransanaConstants.QDE_XML
+
 class XMLExport(Dialogs.GenForm):
     """ This window displays a variety of GUI Widgets. """
     def __init__(self,parent,id,title):
@@ -72,44 +75,28 @@ class XMLExport(Dialogs.GenForm):
         # Create the form's main VERTICAL sizer
         mainSizer = wx.BoxSizer(wx.VERTICAL)
 
-##        exportTxt  = _("You can export data to Transana-XML format which can only be loaded in Transana, or you \ncan export data to QDA-XML format which can be loaded in some other QDA packages.\n\n")
-##        exportTxt += _("Transana-XML allows transfer of all data in the Transana database.  ")
-##        exportTxt += _("QDA-XML data exchange\nis likely to exhibit some data loss, which depends heavily on the compatibility of the software\npackage which imports the file.\n\n")
-##        exportTxt += _("Please see the Help file for more information.")
+        # If using QDE-XML ...
+        if QDE_XML_ENABLED:
+            exportTxt  = _("You can export data to Transana-XML format which can only be loaded in Transana, or you \ncan export data to QDE-XML format which can be loaded in some other QDE packages.\n\n")
+            exportTxt += _("Transana-XML allows transfer of all data in the Transana database.  ")
+            exportTxt += _("QDE-XML data exchange\nis likely to exhibit some data loss, which depends heavily on the compatibility of the software\npackage which imports the file.\n\n")
+            exportTxt += _('Press "Browse" and select the File Type to select which export format you want.\n\n')
+            exportTxt += _("Please see the Help file for more information.")
+        # If QDE-XML is disabled, we don't need to explain it!
+        else:
+            exportTxt  = _("Please specify a file name for data export.")
 
-        exportTxt  = _("Please specify a file name for data export.")
-        
+        # Add a Text block for the instructions text
         exportTxtCtrl = wx.StaticText(self.panel, -1, exportTxt)
         mainSizer.Add(exportTxtCtrl, 0, wx.EXPAND | wx.ALL, 5)
         mainSizer.Add((1, 15))
 
-        h1 = wx.BoxSizer(wx.HORIZONTAL)
-        formatTxtCtrl = wx.StaticText(self.panel, -1, _("Export Format"))
-
-
-
-        formatTxtCtrl.Show(False)
-
-
-        
-        h1.Add(formatTxtCtrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.formatCtrl = wx.Choice(self.panel, -1, choices=[_('Transana-XML Format'), _('QDA-XML Format')])
-        self.formatCtrl.SetSelection(0)
-
-
-
-        self.formatCtrl.Show(False)
-
-
-        
-        self.formatCtrl.Bind(wx.EVT_CHOICE, self.OnFormatSelect)
-        h1.Add(self.formatCtrl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        mainSizer.Add(h1, 0, wx.EXPAND)
-        
         h2 = wx.BoxSizer(wx.HORIZONTAL)
+        # Add a choice for the user between full and codebook export
         contentTxtCtrl = wx.StaticText(self.panel, -1, _("Data to Export"))
         h2.Add(contentTxtCtrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.contentCtrl = wx.Choice(self.panel, -1, choices=[_('Full Database'), _('Codebook Only')])
+        # default to full export
         self.contentCtrl.SetSelection(0)
         h2.Add(self.contentCtrl, 1, wx.EXPAND | wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         mainSizer.Add(h2, 0, wx.EXPAND)
@@ -180,44 +167,42 @@ class XMLExport(Dialogs.GenForm):
         # Set focus to the XML file field
         self.XMLFile.SetFocus()
 
-    def OnFormatSelect(self, event):
-        if self.XMLFile.GetValue() != '':
-            # ... get the selected file name
-            fileName = self.XMLFile.GetValue()
-            (fn, ext) = os.path.splitext(fileName)
-            if self.formatCtrl.GetSelection() == 0:
-                fileName = fn + '.tra'
-            elif self.formatCtrl.GetSelection() == 1:
-                fileName = fn + '.qde'
-            self.XMLFile.SetValue(fileName)
-
     def OnBrowse(self, evt):
         """Invoked when the user activates the Browse button."""
-        # Define the File Filter options
-        fileTypesString = _("All Export Formats (*.tra, *.qde, *.xml)|*.tra;*.qde;*.xml|Transana-XML Files (*.tra)|*.tra|Qualitative Data Exchange Files (*.qde)|*.qde|XML Files (*.xml)|*.xml|All files (*.*)|*.*")
+        # If QDE-XML is enabled ...
+        if QDE_XML_ENABLED:
+            # Define the File Filter options, including *.qde
+            fileTypesString = _("All Export Formats (*.tra, *.qde, *.xml)|*.tra;*.qde;*.xml|Transana-XML Files (*.tra)|*.tra|Qualitative Data Exchange Files (*.qde)|*.qde|XML Files (*.xml)|*.xml|All files (*.*)|*.*")
+        # If QDE-XML is NOT enabled ...
+        else:
+            # Define the File Filter options, NOT including *.qde
+            fileTypesString = _("All Export Formats (*.tra, *.xml)|*.tra;*.xml|Transana-XML Files (*.tra)|*.tra|XML Files (*.xml)|*.xml|All files (*.*)|*.*")
+
         # Create a File Open dialog.
         fs = wx.FileDialog(self, _("Select a file for export"),
                         TransanaGlobal.configData.videoPath,
                         "",
                         fileTypesString, 
                         wx.FD_SAVE)
-        # Select the initial file Filter
-        if self.formatCtrl.GetSelection() == 0:
-            fs.SetFilterIndex(1)
-        elif self.formatCtrl.GetSelection() == 1:
-            fs.SetFilterIndex(2)
+        # Default to Transana-XML format
+        fs.SetFilterIndex(1)
         # If user didn't cancel ..
         # Show the dialog and get user response.  If OK ...
         if fs.ShowModal() == wx.ID_OK:
             # ... get the selected file name
             fileName = fs.GetPath()
+            # Split file name and extension
             (fn, ext) = os.path.splitext(fileName)
-            if self.formatCtrl.GetSelection() == 0:
-                fileName = fn + '.tra'
-            elif self.formatCtrl.GetSelection() == 1:
+            # Force the file to the correct file extension
+            if QDE_XML_ENABLED and (fs.GetFilterIndex() == 2):
                 fileName = fn + '.qde'
+            else:
+                fileName = fn + '.tra'
+            # Transfer the file name to the Form
             self.XMLFile.SetValue(fileName)
+        # If the user cancels ...
         else:
+            # ... blank out the file name
             self.fileName = ''
 
         # Destroy the File Dialog
@@ -256,10 +241,15 @@ class XMLExport(Dialogs.GenForm):
 
     def CalcPercent(self, num):
         """ Calculate the Percent value to be displayed in the Progress Bar """
-        if self.formatCtrl.GetSelection() == 0:
+        # If we have a Qualitative Data Exchange file ...
+        if os.path.splitext(self.XMLFile.GetValue())[1].lower() == '.qde':
+            # ... we may have 19 categories for export
             numCategories = 19.0
-        elif self.formatCtrl.GetSelection() == 1:
+        # If we have a Transana-XML file ...
+        else:
+            # ... we have 15 categories for export
             numCategories = 15.0
+        # Return the appropriate integer representation of the progress percentage
         return int(round(100.0 / numCategories * num))
 
     def Export(self):
@@ -2063,7 +2053,7 @@ class XMLExport(Dialogs.GenForm):
             f.write('      </FilterData>\n')
             f.write('    </Filter>\n')
 
-    def QDAExport(self):
+    def QDEExport(self):
         # use the LONGEST title here!  That determines the size of the Dialog Box.
         progress = wx.ProgressDialog(_('Transana XML Export'), _('Exporting Transcript records (This may be slow because of the size of Transcript records.)'), style = wx.PD_APP_MODAL | wx.PD_AUTO_HIDE)
         if progress.GetSize()[0] > 800:
@@ -2093,29 +2083,16 @@ class XMLExport(Dialogs.GenForm):
                     fs = os.getenv("HOME") + os.sep + fs
             f = file(fs, 'w')
             progress.Update(0, _('Writing Headers'))
-            self.WriteQDAXMLDTD(f)
+            self.WriteQDEXMLDTD(f)
 
             f.write('<QDA-XML>\n');
-##            f.write('  <TransanaXMLVersion>\n');
-##            # Version 1.0 -- Original Transana XML for Transana 2.0 release
-##            # Version 1.1 -- Unicode encoding added to Transana XML for Transana 2.1 release
-##            # Version 1.2 -- Filter Table added to Transana XML for Transana 2.11 release
-##            # Version 1.3 -- FilterData handling changed to accomodate Unicode data for Transana 2.21 release
-##            # Version 1.4 -- Database structure changed to accomodate Multiple Transcript Clips, BLOB keyword definitions
-##            #                for Transana 2.30 release.
-##            # Version 1.5 -- Database structure changed to accomodate Multiple Simultaneous Media Files for the
-##            #                Transana 2.40 release.
-##            # Version 1.6 -- Added XML format for transcripts and character escapes for Transana 2.50 release
-##            # Version 1.7 -- Database Structure changed for Still Image Snapshots for Transana 2.60 release
-##            # Version 1.8 -- Character Encoding Rules changed completely!!
-##            # Version 2.0 -- Transana 3.0, Documents and Quotes added
-##            # Version 2.1 -- Synonyms Table added
-##            if ENCODE_PROPERLY:
-##                f.write('    2.1\n')
-##            else:
-##                f.write('    1.7\n')
-##            f.write('  </TransanaXMLVersion>\n')
+            f.write('  <QDA-XMLVersion>\n');
+            # Version 0.1 -- Initial Development
+            # Version 1.0 -- Original QDE-XML specification
+            f.write('    0.1\n')
+            f.write('  </QDA-XMLVersion>\n')
 
+##            # if the user selected "Full Database" export ...
 ##            if self.contentCtrl.GetSelection() == 0:
 ##
 ##                progress.Update(self.CalcPercent(1), _('Writing Library Records'))
@@ -2127,7 +2104,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <SeriesFile>\n')
 ##                        for seriesRec in data:
-##                            self.WriteQDASeriesRec(f, seriesRec)
+##                            self.WriteQDESeriesRec(f, seriesRec)
 ##                        f.write('  </SeriesFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2140,7 +2117,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <DocumentFile>\n')
 ##                        for documentRec in data:
-##                            self.WriteQDADocumentRec(f, progress, documentRec)
+##                            self.WriteQDEDocumentRec(f, progress, documentRec)
 ##                        f.write('  </DocumentFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2153,7 +2130,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <EpisodeFile>\n')
 ##                        for episodeRec in data:
-##                            self.WriteQDAEpisodeRec(f, episodeRec)
+##                            self.WriteQDEEpisodeRec(f, episodeRec)
 ##                        f.write('  </EpisodeFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2166,7 +2143,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <CollectionFile>\n')
 ##                        for collectionRec in data:
-##                            self.WriteQDACollectionRec(f, collectionRec)
+##                            self.WriteQDECollectionRec(f, collectionRec)
 ##                        f.write('  </CollectionFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2179,7 +2156,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <QuoteFile>\n')
 ##                        for quoteRec in data:
-##                            self.WriteQDAQuoteRec(f, quoteRec)
+##                            self.WriteQDEQuoteRec(f, quoteRec)
 ##                        f.write('  </QuoteFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2192,7 +2169,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <QuotePositionFile>\n')
 ##                        for quotePosRec in data:
-##                            self.WriteQDAQuotePosRec(f, quotePosRec)
+##                            self.WriteQDEQuotePosRec(f, quotePosRec)
 ##                        f.write('  </QuotePositionFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2206,7 +2183,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <ClipFile>\n')
 ##                        for clipRec in data:
-##                            self.WriteQDAClipRec(f, clipRec)
+##                            self.WriteQDEClipRec(f, clipRec)
 ##                        f.write('  </ClipFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2231,7 +2208,7 @@ class XMLExport(Dialogs.GenForm):
 ##                            # Add the RTFText to the Transcript Record
 ##                            transcriptRec = transcriptRec + rtfText
 ##                            # Write the Transcript Record to the Export File
-##                            self.WriteQDATranscriptRec(f, progress, transcriptRec)
+##                            self.WriteQDETranscriptRec(f, progress, transcriptRec)
 ##                        f.write('  </TranscriptFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2246,10 +2223,11 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <SnapshotFile>\n')
 ##                        for snapshotRec in data:
-##                            self.WriteQDASnapshotRec(f, snapshotRec)
+##                            self.WriteQDESnapshotRec(f, snapshotRec)
 ##                        f.write('  </SnapshotFile>\n')
 ##                    dbCursor.close()
-##
+
+            # This block is executed for both "Full Database" and "Codebook Only" exports
             progress.Update(self.CalcPercent(10), _('Writing Keyword Records'))
             if db != None:
                 self.kwGUID = 0
@@ -2259,12 +2237,11 @@ class XMLExport(Dialogs.GenForm):
                 dbCursor.execute(SQLText)
                 data = dbCursor.fetchall()
                 if len(data) > 0:
-##                    f.write('  <Codebook>\n')
                     for keywordRec in data:
-                        self.WriteQDAKeywordRec(f, keywordRec)
-##                    f.write('  </Codebook>\n')
+                        self.WriteQDEKeywordRec(f, keywordRec)
                 dbCursor.close()
 
+##            # if the user selected "Full Database" export ...
 ##            if self.contentCtrl.GetSelection() == 0:
 ##
 ##                progress.Update(self.CalcPercent(11), _('Writing Clip Keyword Records'))
@@ -2276,7 +2253,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <ClipKeywordFile>\n')
 ##                        for clipKeywordRec in data:
-##                            self.WriteQDAClipKeywordRec(f, clipKeywordRec)
+##                            self.WriteQDEClipKeywordRec(f, clipKeywordRec)
 ##                        f.write('  </ClipKeywordFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2289,7 +2266,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <SnapshotKeywordFile>\n')
 ##                        for snapshotKeywordRec in data:
-##                            self.WriteQDASnapshotKeywordRec(f, snapshotKeywordRec)
+##                            self.WriteQDESnapshotKeywordRec(f, snapshotKeywordRec)
 ##                        f.write('  </SnapshotKeywordFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2303,7 +2280,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <SnapshotKeywordStyleFile>\n')
 ##                        for snapshotKeywordStyleRec in data:
-##                            self.WriteQDASnapshotKeywordStyleRec(f, snapshotKeywordStyleRec)
+##                            self.WriteQDESnapshotKeywordStyleRec(f, snapshotKeywordStyleRec)
 ##                        f.write('  </SnapshotKeywordStyleFile>\n')
 ##                    dbCursor.close()
 ##
@@ -2317,7 +2294,7 @@ class XMLExport(Dialogs.GenForm):
 ##                    if len(data) > 0:
 ##                        f.write('  <NoteFile>\n')
 ##                        for noteRec in data:
-##                            self.WriteQDANoteRec(f, noteRec)
+##                            self.WriteQDENoteRec(f, noteRec)
 ##                        f.write('  </NoteFile>\n')
 ##                    dbCursor.close()
 
@@ -2351,11 +2328,11 @@ class XMLExport(Dialogs.GenForm):
         progress.Update(100)
         progress.Destroy()
 
-    def WriteQDAXMLDTD(self, f):
+    def WriteQDEXMLDTD(self, f):
 
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 ##        f.write('<!DOCTYPE QDA-XML [\n')
-##        f.write('  <!ELEMENT TransanaXMLVersion (#PCDATA)>\n')
+##        f.write('  <!ELEMENT QDA-XMLVersion (#PCDATA)>\n')
 ##        f.write('  <!ELEMENT SeriesFile (Series)*>\n')
 ##        f.write('\n')
 ##        f.write('  <!ELEMENT Num (#PCDATA)>\n')
@@ -2519,7 +2496,7 @@ class XMLExport(Dialogs.GenForm):
 ##        f.write(']>\n')
 ##        f.write('\n')
 
-##    def WriteQDASeriesRec(self, f, seriesRec):
+##    def WriteQDESeriesRec(self, f, seriesRec):
 ##        (SeriesNum, SeriesID, SeriesComment, SeriesOwner, DefaultKeywordGroup) = seriesRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2551,7 +2528,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </DefaultKeywordGroup>\n')
 ##        f.write('    </Series>\n')
 ##
-##    def WriteQDADocumentRec(self, f, progress, documentRec):
+##    def WriteQDEDocumentRec(self, f, progress, documentRec):
 ##        (DocumentNum, DocumentID, LibraryNum, Author, Comment, ImportedFile, ImportDate, DocumentLength, XMLText) = documentRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2657,7 +2634,7 @@ class XMLExport(Dialogs.GenForm):
 ##
 ##        f.write('    </Document>\n')
 ##
-##    def WriteQDAEpisodeRec(self, f, episodeRec):
+##    def WriteQDEEpisodeRec(self, f, episodeRec):
 ##        (EpisodeNum, EpisodeID, SeriesNum, TapingDate, MediaFile, EpLength, EpComment) = episodeRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2694,7 +2671,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </Comment>\n')
 ##        f.write('    </Episode>\n')
 ##
-##    def WriteQDACollectionRec(self, f, collectionRec):
+##    def WriteQDECollectionRec(self, f, collectionRec):
 ##        (CollectNum, CollectID, ParentCollectNum, CollectComment, CollectOwner, DefaultKeywordGroup) = collectionRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2730,7 +2707,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </DefaultKeywordGroup>\n')
 ##        f.write('    </Collection>\n')
 ##
-##    def WriteQDAQuoteRec(self, f, quoteRec):
+##    def WriteQDEQuoteRec(self, f, quoteRec):
 ##        (QuoteNum, QuoteID, CollectNum, SourceDocumentNum, SortOrder, Comment, XMLText) = quoteRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2820,7 +2797,7 @@ class XMLExport(Dialogs.GenForm):
 ##
 ##        f.write('    </Quote>\n')
 ##
-##    def WriteQDAQuotePosRec(self, f, quotePosRec):
+##    def WriteQDEQuotePosRec(self, f, quotePosRec):
 ##        (QuoteNum, DocumentNum, StartChar, EndChar) = quotePosRec
 ##
 ##        f.write('    <QuotePosition>\n')
@@ -2839,7 +2816,7 @@ class XMLExport(Dialogs.GenForm):
 ##        f.write('      </EndChar>\n')
 ##        f.write('    </QuotePosition>\n')
 ##
-##    def WriteQDAClipRec(self, f, clipRec):
+##    def WriteQDEClipRec(self, f, clipRec):
 ##        (ClipNum, ClipID, CollectNum, EpisodeNum, MediaFile, ClipStart, ClipStop, ClipOffset, ClipAudio, ClipComment, SortOrder) = clipRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -2890,7 +2867,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </SortOrder>\n')
 ##        f.write('    </Clip>\n')
 ##
-##    def WriteQDASnapshotRec(self, f, snapshotRec):
+##    def WriteQDESnapshotRec(self, f, snapshotRec):
 ##        (SnapshotNum, SnapshotID, CollectNum, ImageFile, ImageScale, ImageCoordsX, ImageCoordsY, 
 ##         ImageSizeW, ImageSizeH, EpisodeNum, TranscriptNum, SnapshotTimeCode, SnapshotDuration, 
 ##         SnapshotComment, SortOrder) = snapshotRec
@@ -2955,7 +2932,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </SortOrder>\n')
 ##        f.write('    </Snapshot>\n')
 ##
-##    def WriteQDATranscriptRec(self, f, progress, transcriptRec):
+##    def WriteQDETranscriptRec(self, f, progress, transcriptRec):
 ##        (TranscriptNum, TranscriptID, EpisodeNum, SourceTranscriptNum, ClipNum, SortOrder, Transcriber,
 ##         ClipStart, ClipStop, Comment, MinTranscriptWidth, RTFText) = transcriptRec
 ##
@@ -3166,7 +3143,7 @@ class XMLExport(Dialogs.GenForm):
 ##            
 ##        f.write('    </Transcript>\n')
 ##
-    def WriteQDAKeywordRec(self, f, keywordRec):
+    def WriteQDEKeywordRec(self, f, keywordRec):
         (KeywordGroup, Keyword, Definition, LineColorName, LineColorDef, DrawMode, LineWidth, LineStyle) = keywordRec
 
         # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -3179,8 +3156,9 @@ class XMLExport(Dialogs.GenForm):
         f.write('    <Code>\n')
 
         # See if the Keyword Group has been defined.  If not, define it.
-        if self.keywords.has_key(KeywordGroup):
-            parentGUID = self.keywords[KeywordGroup]
+        # The dictionary key is the keyword text and the parent number
+        if self.keywords.has_key((KeywordGroup, 0)):
+            parentGUID = self.keywords[(KeywordGroup, 0)]
         else:
             self.kwGUID += 1
             parentGUID = 0
@@ -3201,7 +3179,8 @@ class XMLExport(Dialogs.GenForm):
             f.write('      </IsCodable>\n')
             f.write('    </Code>\n')
             f.write('    <Code>\n')
-            self.keywords[KeywordGroup] = self.kwGUID
+            # Remember the Keyword Group GUID for use later
+            self.keywords[(KeywordGroup, 0)] = self.kwGUID
             parentGUID = self.kwGUID
         
         self.kwGUID += 1
@@ -3246,8 +3225,10 @@ class XMLExport(Dialogs.GenForm):
         f.write('      </IsCodable>\n')
         # ColorName, LineColorDef, DrawMode, LineWidth, and LineStyle are not supported
         f.write('    </Code>\n')
-
-##    def WriteQDAClipKeywordRec(self, f, clipKeywordRec):
+        # Remember the Keyword's GUID for use later
+        self.keywords[(Keyword, parentGUID)] = self.kwGUID
+        
+##    def WriteQDEClipKeywordRec(self, f, clipKeywordRec):
 ##        (EpisodeNum, DocumentNum, ClipNum, QuoteNum, SnapshotNum, KeywordGroup, Keyword, Example) = clipKeywordRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -3289,7 +3270,7 @@ class XMLExport(Dialogs.GenForm):
 ##            f.write('      </Example>\n')
 ##        f.write('    </ClipKeyword>\n')
 ##
-##    def WriteQDASnapshotKeywordRec(self, f, snapshotKeywordRec):
+##    def WriteQDESnapshotKeywordRec(self, f, snapshotKeywordRec):
 ##        (SnapshotNum, KeywordGroup, Keyword, x1, y1, x2, y2, visible) = snapshotKeywordRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -3325,7 +3306,7 @@ class XMLExport(Dialogs.GenForm):
 ##        f.write('      </Visible>\n')
 ##        f.write('    </SnapshotKeyword>\n')
 ##
-##    def WriteQDASnapshotKeywordStyleRec(self, f, snapshotKeywordStyleRec):
+##    def WriteQDESnapshotKeywordStyleRec(self, f, snapshotKeywordStyleRec):
 ##        (SnapshotNum, KeywordGroup, Keyword, DrawMode, LineColorName, LineColorDef, LineWidth, LineStyle) = snapshotKeywordStyleRec
 ##
 ##        # If we're encoding things (for 1.8 format) and we're using MySQL ...
@@ -3362,7 +3343,7 @@ class XMLExport(Dialogs.GenForm):
 ##        f.write('      </LineStyle>\n')
 ##        f.write('    </SnapshotKeywordStyle>\n')
 ##
-##    def WriteQDANoteRec(self, f, noteRec):
+##    def WriteQDENoteRec(self, f, noteRec):
 ##        (NoteNum, NoteID, SeriesNum, EpisodeNum, CollectNum, ClipNum, SnapshotNum, DocumentNum, QuoteNum, TranscriptNum, \
 ##         NoteTaker, NoteText) = noteRec
 ##
