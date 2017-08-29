@@ -40,6 +40,8 @@ import os
 # import Python's Regular Expresions
 import re
 import sys
+# import Python's GUID / UUID module
+import uuid
 
 # Set the encoding for export.
 # Use UTF-8 regardless of the current encoding for consistency in the Transana XML files
@@ -236,6 +238,22 @@ class XMLExport(Dialogs.GenForm):
             inpStr = inpStr[:chrPos] + '&lt;' + inpStr[chrPos + 1:]
             # ... and look for the NEXT Less Than after the replacement
             chrPos = inpStr.find('<', chrPos + 1)
+        # Find the first Quotation Mark in the document
+        chrPos = inpStr.find('"')
+        # While there are more Quotation Marks ...
+        while (chrPos > -1):
+            # ... replace the Quotation Mark with the escape string ...
+            inpStr = inpStr[:chrPos] + '&quot;' + inpStr[chrPos + 1:]
+            # ... and look for the NEXT Quotation Mark after the replacement
+            chrPos = inpStr.find('"', chrPos + 1)
+        # Find the first line break in the document
+        chrPos = inpStr.find('\n')
+        # While there are more line breaks ...
+        while (chrPos > -1):
+            # ... replace the lien break with the escape string ...
+            inpStr = inpStr[:chrPos] + '&#10;' + inpStr[chrPos + 1:]
+            # ... and look for the NEXT line break after the replacement
+            chrPos = inpStr.find('\n', chrPos + 1)
         # Return the modified string
         return inpStr
 
@@ -2085,12 +2103,19 @@ class XMLExport(Dialogs.GenForm):
             progress.Update(0, _('Writing Headers'))
             self.WriteQDEXMLDTD(f)
 
-            f.write('<QDA-XML>\n');
-            f.write('  <QDA-XMLVersion>\n');
-            # Version 0.1 -- Initial Development
-            # Version 1.0 -- Original QDE-XML specification
-            f.write('    0.1\n')
-            f.write('  </QDA-XMLVersion>\n')
+            # If writing a full Database ...
+            if self.contentCtrl.GetSelection() == 0:
+                # ... use the QDA-XML header
+                f.write('<QDA-XML>\n');
+            # If writing a Codebook Only ...
+            elif self.contentCtrl.GetSelection() == 1:
+                # ... use the Codebook Header
+                f.write('<CODEBOOK\n')
+                f.write('  xmlns="urn:QDA-XML:project:1:0"\n')
+                f.write('  xmlns:qda="urn:QDA-XML:types"\n')
+                f.write('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n')
+                f.write('  xsi:schemaLocation="urn:QDA-XML:project:1:0 Codebook.xsd"\n')
+                f.write('  Name="Codebook exported from Transana" GUID="%s">\n' % self.newGUID())
 
 ##            # if the user selected "Full Database" export ...
 ##            if self.contentCtrl.GetSelection() == 0:
@@ -2231,7 +2256,8 @@ class XMLExport(Dialogs.GenForm):
             progress.Update(self.CalcPercent(10), _('Writing Keyword Records'))
             if db != None:
                 self.kwGUID = 0
-                self.keywords = {}
+                # We need to keep track of GUIDS for Keyword Groups
+                self.keywordGroups = {}
                 dbCursor = db.cursor()
                 SQLText = 'SELECT KeywordGroup, Keyword, Definition, LineColorName, LineColorDef, DrawMode, LineWidth, LineStyle FROM Keywords2'
                 dbCursor.execute(SQLText)
@@ -2298,7 +2324,14 @@ class XMLExport(Dialogs.GenForm):
 ##                        f.write('  </NoteFile>\n')
 ##                    dbCursor.close()
 
-            f.write('</QDA-XML>\n');
+            # If writing a full Database ...
+            if self.contentCtrl.GetSelection() == 0:
+                # ... close the QDA-XML header
+                f.write('</QDA-XML>\n');
+            # If writing a Codebook Only ...
+            elif self.contentCtrl.GetSelection() == 1:
+                # ... close the Codebook Header
+                f.write('</CODEBOOK>\n')
 
             f.flush()
 
@@ -3142,92 +3175,58 @@ class XMLExport(Dialogs.GenForm):
 ##            wx.YieldIfNeeded()
 ##            
 ##        f.write('    </Transcript>\n')
-##
+
+
+
     def WriteQDEKeywordRec(self, f, keywordRec):
         (KeywordGroup, Keyword, Definition, LineColorName, LineColorDef, DrawMode, LineWidth, LineStyle) = keywordRec
 
-        # If we're encoding things (for 1.8 format) and we're using MySQL ...
+        # If we're encoding things and we're using MySQL ...
         if ENCODE_PROPERLY and TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
-            # ... encode the value
+            # ... encode the value correctly
             KeywordGroup = DBInterface.ProcessDBDataForUTF8Encoding(KeywordGroup)
             Keyword = DBInterface.ProcessDBDataForUTF8Encoding(Keyword)
             Definition = DBInterface.ProcessDBDataForUTF8Encoding(Definition)
 
-        f.write('    <Code>\n')
-
-        # See if the Keyword Group has been defined.  If not, define it.
-        # The dictionary key is the keyword text and the parent number
-        if self.keywords.has_key((KeywordGroup, 0)):
-            parentGUID = self.keywords[(KeywordGroup, 0)]
+        # See if the Keyword Group has been defined.  The dictionary key is the keywordGroup text
+        if self.keywordGroups.has_key(KeywordGroup):
+            # if defined, use this GUID
+            parentGUID = self.keywordGroups[KeywordGroup]
+        # If a Keyword Group is not yet defined ...
         else:
-            self.kwGUID += 1
+            # ... create a GUID for the Keyword Group ...
+            self.kwGUID = self.newGUID()
+            # ... set the Parent GUID to 0
             parentGUID = 0
-            f.write('      <GUID>\n')
-            f.write('        %d\n' % self.kwGUID)
-            f.write('      </GUID>\n')
-            f.write('      <Parent>\n')
-            f.write('        %d\n' % parentGUID)
-            f.write('      </Parent>\n')
-            f.write('      <Name>\n')
-            f.write('        %s\n' % self.Escape(KeywordGroup.encode(EXPORT_ENCODING)))
-            f.write('      </Name>\n')
-            f.write('      <Type>\n')
-            f.write('        String\n')
-            f.write('      </Type>\n')
-            f.write('      <IsCodable>\n')
-            f.write('        0\n')
-            f.write('      </IsCodable>\n')
+            # ... write a CODE record for the Keyword Group
+            f.write('    <Code \n')
+            f.write('      GUID="%s" \n' % self.kwGUID)
+            f.write('      Name="%s" \n' % self.Escape(KeywordGroup.encode(EXPORT_ENCODING)))
+            f.write('      Type="String" \n')
+            f.write('      IsCodable="false"> \n')
             f.write('    </Code>\n')
-            f.write('    <Code>\n')
             # Remember the Keyword Group GUID for use later
-            self.keywords[(KeywordGroup, 0)] = self.kwGUID
+            self.keywordGroups[KeywordGroup] = self.kwGUID
             parentGUID = self.kwGUID
-        
-        self.kwGUID += 1
-        f.write('      <GUID>\n')
-        f.write('        %d\n' % self.kwGUID)
-        f.write('      </GUID>\n')
-        f.write('      <Parent>\n')
-        f.write('        %d\n' % parentGUID)
-        f.write('      </Parent>\n')
-        f.write('      <Name>\n')
-        f.write('        %s\n' % self.Escape(Keyword.encode(EXPORT_ENCODING)))
-        f.write('      </Name>\n')
+
+        # Create a GUID for the Keyword
+        self.kwGUID = self.newGUID()
+        # Write a CODE record for the Keyword
+        f.write('    <Code \n')
+        f.write('      GUID="%s" \n' % self.kwGUID)
+        f.write('      Name="%s" \n' % self.Escape(Keyword.encode(EXPORT_ENCODING)))
         if Definition != '':
-            f.write('      <Description>\n')
-            # Okay, this isn't so straight-forward any more.
-            # With Transana 2.30, Definition becomes a BLOB of type array.  It could then either be a
-            # character string (typecode == 'c') or a unicode string (typecode == 'u'), which then
-            # need to be interpreted differently.
-            if type(Definition).__name__ == 'array':
-                if (Definition.typecode == 'u'):
-                    Definition = Definition.tounicode()
-                else:
-                    Definition = Definition.tostring()
-                    if ('unicode' in wx.PlatformInfo):
-                        try:
-                            Definition = unicode(Definition, EXPORT_ENCODING)
-                        except UnicodeDecodeError, e:
-                            Definition = unicode(Definition.decode(TransanaGlobal.encoding))
-            elif isinstance(Definition, str):
-                Definition = DBInterface.ProcessDBDataForUTF8Encoding(Definition)
-            f.write('        %s\n' % self.Escape(Definition.encode(EXPORT_ENCODING)))
-            f.write('      </Description>\n')
-        f.write('      <Type>\n')
-        f.write('        String\n')
-        f.write('      </Type>\n')
+            f.write('      Description="%s" \n' % self.Escape(Definition.encode(EXPORT_ENCODING)))
+        f.write('      Type="String" \n')
         if LineColorDef != '':
-            f.write('      <ColorDef>\n')
-            f.write('        %s\n' % LineColorDef)
-            f.write('      </ColorDef>\n')
-        f.write('      <IsCodable>\n')
-        f.write('        1\n')
-        f.write('      </IsCodable>\n')
+            f.write('      Color="%s" \n' % LineColorDef)
+        f.write('      IsCodable="true"> \n')
+        f.write('      <qda:IsChildOfCode>%s</qda:IsChildOfCode>\n' % parentGUID)
         # ColorName, LineColorDef, DrawMode, LineWidth, and LineStyle are not supported
         f.write('    </Code>\n')
-        # Remember the Keyword's GUID for use later
-        self.keywords[(Keyword, parentGUID)] = self.kwGUID
-        
+
+
+
 ##    def WriteQDEClipKeywordRec(self, f, clipKeywordRec):
 ##        (EpisodeNum, DocumentNum, ClipNum, QuoteNum, SnapshotNum, KeywordGroup, Keyword, Example) = clipKeywordRec
 ##
@@ -3437,6 +3436,11 @@ class XMLExport(Dialogs.GenForm):
 ##                f.write('%s\n' % _('(No Note Text found.)').encode(EXPORT_ENCODING))
 ##            f.write('      </NoteText>\n')
 ##        f.write('    </Note>\n')
+
+    def newGUID(self):
+        """ Generate GUIDs """
+        # Return a string representation of a new GUID created by Python
+        return str(uuid.uuid4())
 
 
 # This simple derrived class let's the user drop files onto an edit box
