@@ -1550,8 +1550,8 @@ class VisualizationWindow(wx.Dialog):
         # If we have a Clip ...
         elif isinstance(self.VisualizationObject, Clip.Clip):
             # ... not the mediaStart and mediaLength
-            mediaStart = isualizationObject.clip_start
-            mediaLength = visualizationObject.clip_stop - visualizationObject.clip_start
+            mediaStart = self.VisualizationObject.clip_start
+            mediaLength = self.VisualizationObject.clip_stop - self.VisualizationObject.clip_start
 
         # Now that audio extraction is complete, signal that it's time to draw the Waveform Diagram during
         # Idle time.
