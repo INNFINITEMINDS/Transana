@@ -63,8 +63,8 @@ import xml.sax
 
 MENU_FILE_EXIT = wx.NewId()
 
-# FLAG for including or excluding the QDE-XML export option
-QDE_XML_ENABLED = TransanaConstants.QDE_XML
+# FLAG for including or excluding the QDA-XML export option
+QDA_XML_ENABLED = TransanaConstants.QDA_XML
 
 class XMLImport(Dialogs.GenForm):
     """ This window displays a variety of GUI Widgets. """
@@ -2036,8 +2036,8 @@ class XMLImport(Dialogs.GenForm):
        if (self.importData == None) or not ('wxMac' in wx.PlatformInfo):
            progress.Destroy()
 
-    def QDEImport(self):
-        """ Handle the QDE-XML Import request """
+    def QDAImport(self):
+        """ Handle the QDA-XML Import request """
 
         # Get the database connection
         db = DBInterface.get_db()
@@ -2205,9 +2205,9 @@ class XMLImport(Dialogs.GenForm):
     def OnBrowse(self, evt):
         """Invoked when the user activates the Browse button."""
         # If the Qualitative Data Exchange is enabled ...
-        if QDE_XML_ENABLED:
+        if QDA_XML_ENABLED:
             # ..include *.qde in the file formats
-            fileTypes = _("All Import Formats (*.tra, *.qde, *.xml)|*.tra;*.qde;*.xml|Transana-XML Files (*.tra)|*.tra|Qualitative Data Exchange Files (*.qde)|*.qde|XML Files (*.xml)|*.xml|All files (*.*)|*.*")
+            fileTypes = _("All Import Formats (*.tra, *.qdc, *.qde, *.xml)|*.tra;*.qdc;*.qde;*.xml|Transana-XML Files (*.tra)|*.tra|Qualitative Data Exchange Files (*.qdc, *.qde)|*.qdc;*.qde|XML Files (*.xml)|*.xml|All files (*.*)|*.*")
         # If not ...
         else:
             # ... then skip it

@@ -1413,10 +1413,10 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                 # If so, close it, which saves anything being edited.
                 self.ControlObject.NotesBrowserWindow.Close()
             # If the file extension is for Qualitative Data Exchange ...
-            if ext == '.qde':
+            if ext in ['.qdc', '.qde']:
                 # ... request the Qualitative Data Exchange form of the import
-                temp.QDEImport()
-            # if the file extension is NOT for QDE (probably .TRA or .XML) ... 
+                temp.QDAImport()
+            # if the file extension is NOT for QDA-XML (probably .TRA or .XML) ... 
             else:
                 # ... Import the requested data in Transana-XML format!
                 temp.Import()
@@ -1535,17 +1535,17 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             if ext == '.tra':
                 # ... export the data in Transana-XML format (XML extension no longer used.)
                 temp.Export()
-            # For QDE-XML Export ...
-            elif ext == '.qde':
-                # QDE-XML export of full databases is not yet available.
+            # For QDA-XML Export ...
+            elif ext in ['.qdc', '.qde']:
+                # QDA-XML export of full databases is not yet available.
                 if temp.contentCtrl.GetSelection() == 0:
-                    errDlg = Dialogs.ErrorDialog(self, u'Full Database Export in QDE-XML format is not yet avaialble.')
+                    errDlg = Dialogs.ErrorDialog(self, u'Full Database Export in QDA-XML format is not yet available.')
                     errDlg.ShowModal()
                     errDlg.Destroy()
                 # If Codebook Export is requested
                 elif temp.contentCtrl.GetSelection() == 1:
-                    # ... export the Codebook data in QDE-XML format
-                    temp.QDEExport()
+                    # ... export the Codebook data in QDA-XML format
+                    temp.QDAExport()
         # Close the Export Database dialog
         temp.Close()
 

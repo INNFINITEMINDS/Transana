@@ -53,26 +53,16 @@ if workshopVersion:
     expirationdate = TransanaConfigConstants.xpdt
 
 # Program Version Number
-versionNumber = '3.11b3'
+versionNumber = '3.11b5'
 # Build Number
-buildNumber = '311b3'
+buildNumber = '311b5'
+    
 # Modify for Multi-user if appropriate
 if not singleUserVersion:
     versionNumber = versionNumber + '-MU'
-# Add testing version information if appropriate.  (Set to "''" if not!)
-# NOTE:  This will differ by Platform for a little while.
-if '__WXMAC__' in wx.PlatformInfo:
-    versionNumber = versionNumber +  '-Mac'
-elif 'wxMSW' in wx.PlatformInfo:
-    versionNumber = versionNumber + '-Win'
-elif 'wxGTK' in wx.PlatformInfo:
-    versionNumber += '-Linux Alpha 1.1'
-else:
-    versionNumber += '-Unknown Platform Alpha 1.0'
-
 if labVersion:
-    versionNumber += ' Lab'
-    
+    versionNumber += '-Lab'
+
 # Define limits for the Demonstration Version
 if demoVersion:
     maxEpisodes = 5
@@ -102,8 +92,22 @@ else:
 # or the (new) wxPython Rich Text Control (RTC)
 USESRTC = True
 
-# Indicates whether the Qualitative Data Exchange (QDE-XML) format is active
-QDE_XML = False
+# Indicates whether the Qualitative Data Exchange (QDA-XML) format is active
+QDA_XML = True
+
+if QDA_XML:
+    versionNumber += '-QDE'
+
+# Add testing version information if appropriate.  (Set to "''" if not!)
+# NOTE:  This will differ by Platform for a little while.
+if '__WXMAC__' in wx.PlatformInfo:
+    versionNumber = versionNumber +  '-Mac'
+elif 'wxMSW' in wx.PlatformInfo:
+    versionNumber = versionNumber + '-Win'
+elif 'wxGTK' in wx.PlatformInfo:
+    versionNumber += '-Linux Alpha 1.1'
+else:
+    versionNumber += '-Unknown Platform Alpha 1.0'
 
 # Indicate if the Partial Transcript Editing fix should be applied
 partialTranscriptEdit = False

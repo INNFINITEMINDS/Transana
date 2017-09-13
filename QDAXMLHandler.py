@@ -35,9 +35,10 @@ class QDAXMLHandler(xml.sax.ContentHandler):
     """ Create an XML Handler following Python's xml.sax model """
     def __init__(self):
         """ Initialize the xml.sax parsing process """
-        # Initialize the Object Type and Current Object to None
+        # Initialize the Object Type to None
         self.objType = None
-        self.currentObj = None
+        # Current Object is a list to handle nested objects
+        self.currentObj = []
         # Create a dictionary to track the GUIDs for Codes.  This is useful because QDA-XML codes don't necessary follow Transana's format
         # and may require some manipulation before being put in the database
         self.keywordsDict = {}
@@ -58,10 +59,11 @@ class QDAXMLHandler(xml.sax.ContentHandler):
             # ... our Object Type is Keyword
             self.objType = 'Keyword'
             # ... we'll use a dictionary to import Code data, as it will most likely not conform to our Keyword object (yet).
-            self.currentObj = {}
+            # Note that we append the new dictionary to the current object list to handle nesting of codes.
+            self.currentObj.append({})
             # Default Codes to Not Codable and a blank Definition
-            self.currentObj['isCodable'] = False
-            self.currentObj['definition'] = u''
+            self.currentObj[-1]['isCodable'] = False
+            self.currentObj[-1]['definition'] = u''
 
         # Process QDA-XML Attributes
 
@@ -75,31 +77,25 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                 # If we have a Dictionary-style object ...
                 if self.objType in ['Keyword']:
                     # ... add the Attribute Value to the dictionary's appropriate Key
-                    self.currentObj['colorDef'] = value
-            # If the Attribute Key is DESCRIPTION ...
-            elif key.upper() == u'DESCRIPTION':
-                # If we have a Dictionary-style object ...
-                if self.objType in ['Keyword']:
-                    # ... add the Attribute Value to the dictionary's appropriate Key
-                    self.currentObj['definition'] = value
+                    self.currentObj[-1]['colorDef'] = value
             # If the Attribute Key is GUID ...
             elif key.upper() == u'GUID':
                 # If we have a Dictionary-style object ...
                 if self.objType in ['Keyword']:
                     # ... add the Attribute Value to the dictionary's appropriate Key
-                    self.currentObj['guid'] = value
+                    self.currentObj[-1]['guid'] = value
             # If the Attribute Key is ISCODABLE ...
             elif key.upper() == u'ISCODABLE':
                 # If we have a Dictionary-style object ...
                 if self.objType in ['Keyword']:
                     # ... add the Attribute Value to the dictionary's appropriate Key
-                    self.currentObj['isCodable'] = (value == u'true')
+                    self.currentObj[-1]['isCodable'] = (value == u'true')
             # If the Attribute Key is NAME ...
             elif key.upper() == u'NAME':
                 # If we have a Dictionary-style object ...
                 if self.objType in ['Keyword']:
                     # ... add the Attribute Value to the dictionary's appropriate Key
-                    self.currentObj['name'] = value
+                    self.currentObj[-1]['name'] = value
             
         if DEBUG:
             print
@@ -107,59 +103,67 @@ class QDAXMLHandler(xml.sax.ContentHandler):
     def characters(self, data):
         """ Following Python's xml.sax model, read the characters between an XML Header tag and an XML Closing tag """
         if DEBUG:
-            print "characters:"
-            print '  ', data.encode('utf8'), type(data), self.element
+            print "characters:  (", self.objType, self.element, ")"
+            print '  "%s"' % data.encode('utf8'), type(data), len(data),
+            if len(data) == 1:
+                print '-->', ord(data)
+            else:
+                print
             print
 
         # If there is data to be read (we don't have an empty line or just whitespace) ...
-        if data.strip() != '':
-            # ... if we have a QDA:ISCHILDOFCODE element ...
-            if self.element.upper() == u'QDA:ISCHILDOFCODE':
-                # If we have a Keyword object ...
-                if self.objType == 'Keyword':
-                    # ... the current Keyword's Parent has just been identified.  Transana needs the Keyword data for this GUID as the Keyword Group
-                    #     for the Current Object!
-                    self.currentObj['parent'] = data
+        if (len(self.currentObj) > 0) and (self.element.upper() == 'DESCRIPTION'):
+            # Handle NewLine Characters
+            if (len(data) == 1) and (ord(data) == 10):
+                self.currentObj[-1]['definition'] += '\n'
+            else:
+                self.currentObj[-1]['definition'] += data
 
     def endElement(self, name):
         """ Following Python's xml.sax model, process an XML Element Closing tag, which often means to process the now-complete imported object """
         if DEBUG:
-            print "endElement:"
-            print '  ', name, type(name), self.objType
+            print "endElement:  (", self.objType, self.element, ")"
+            print '  ', name, type(name), len(self.currentObj), self.currentObj
             print
 
         # If we don't have an Object Type or a Current Object or if the Current object is an empy Dictionary ...
-        if (self.objType == None) or (self.currentObj == None) or (self.currentObj == {}):
+        if (self.objType == None) or (self.currentObj == []) or (self.currentObj == [{}]) or \
+           (name.upper() in ['CODEBOOK', 'CODES', 'DESCRIPTION']):
             # ... then we have nothing to do here.
             pass
         # If we have a Keyword Object ...
         elif self.objType == 'Keyword':
-            # ... if we have a defined GUID ...
-            if self.currentObj.has_key('guid'):
-                # ... add the Current Object (a Dictionary containing Keyword data) to the Keyword Dictionary, using the GUID as the key
-                self.keywordsDict[self.currentObj['guid']] = self.currentObj
-                # If we have a DEFINITION ...
-                if self.currentObj.has_key('definition'):
-                    # ... strip of trailing white space.  Allow for leading white space??
-                    self.currentObj['definition'] = self.currentObj['definition'].rstrip()
-
+            # ... and the closing tag of a Code element ...
+            if name.upper() == 'CODE' and (len(self.currentObj) > 0):
+                # ... get the last element from our Current Object (pop removes it from the list and returns it)
+                tmpObj = self.currentObj.pop()
+                # If there are still elements in the Current Object, the last element is this code's Parent!
+                if len(self.currentObj) > 0:
+                    tmpObj['parent'] = self.currentObj[-1]['guid']
+                # Add this new Keyword dictionary object to our Keyword Dictionary
+                self.keywordsDict[tmpObj['guid']] = tmpObj
+                
                 if DEBUG:                
-                    print 'GUID:       ', self.currentObj['guid']
-                    if self.currentObj.has_key('parent'):
-                        print 'Parent GUID:', self.currentObj['parent']
+                    print 'GUID:       ', tmpObj['guid']
+                    if tmpObj.has_key('parent'):
+                        print 'Parent GUID:', tmpObj['parent']
                         if self.keywordsDict.has_key('parent'):
                             print 'Parent:    ', self.keywordsDict['parent']['name'].encode('utf8')
                         else:
                             print 'Parent Unknown!'
-                    print 'Name:       ', self.currentObj['name'].encode('utf8')
-                    if self.currentObj.has_key('definition') and (self.currentObj['definition'] != ''):
+                    print 'Name:       ', tmpObj['name'].encode('utf8')
+                    if tmpObj.has_key('definition') and (tmpObj['definition'] != ''):
                         print 'Definition:'
-                        print self.currentObj['definition'].encode('utf8')
-                    if self.currentObj.has_key('colorDef'):
-                        print 'Color:      ', self.currentObj['colorDef']
-                    print 'Codable:    ', self.currentObj['isCodable']
+                        print tmpObj['definition'].encode('utf8')
+                    if tmpObj.has_key('colorDef'):
+                        print 'Color:      ', tmpObj['colorDef']
+                    print 'Codable:    ', tmpObj['isCodable']
                     print
                     print
+
+
+
+            
 
         # If we've reached the end of the file, we need to do final data processing.
         if (name.upper() in ['CODEBOOK', 'QDA-XML']):
@@ -173,6 +177,10 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                 
                 print "Keywords:"
 
+                for x in self.keywordsDict.keys():
+                    print x, self.keywordsDict[x]
+                    print
+                    
             # Although it's unlikely, let's assume that keywords will fit Transana's requirements to start.
             # We need to format the codes very differently if in Transana format or not.
             keywordsInTransanaFormat = True
@@ -319,6 +327,3 @@ class QDAXMLHandler(xml.sax.ContentHandler):
 
                 if DEBUG:
                     print
-
-##        # Since we're done with the current 
-##        self.currentObj = None
