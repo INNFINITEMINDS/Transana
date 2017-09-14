@@ -480,7 +480,7 @@ class ReportGenerator(wx.Object):
                 # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
                 prompt = unicode(_("Document: %s"), 'utf8')
             else:
-                prompt = _("Episode: %s")
+                prompt = _("Document: %s")
             self.subtitle = prompt % self.documentName
             # First, get the Document Object ...
             docObj = Document.Document(libraryID=self.seriesName, documentID=self.documentName)
@@ -1321,7 +1321,7 @@ class ReportGenerator(wx.Object):
 
                             if (objType == 'Quote'):
                                 # Turn bold on.
-                                reportText.SetTxtStyle(fontBold =useBold)
+                                reportText.SetTxtStyle(fontBold = useBold)
                                 # Add the header to the report
                                 reportText.WriteText(_('Document:'))
                                 # Turn bold off.
@@ -1681,8 +1681,6 @@ class ReportGenerator(wx.Object):
                                 reportText.SetTxtStyle(fontBold = True, parSpacingAfter = 0, parLineSpacing = 11)
                                 # Add the header to the report
                                 reportText.WriteText(_('Transcript:') + '  ')
-                                # Turn bold off.
-                                reportText.SetTxtStyle(fontBold = False)
 
                                 # If we're showing Hyperlinks ...
                                 if self.showHyperlink:
@@ -1707,6 +1705,9 @@ class ReportGenerator(wx.Object):
                                     reportText.EndURL()
                                     # Stop using the Hyperlink Style
                                     reportText.EndStyle()
+
+                                # Turn bold off.
+                                reportText.SetTxtStyle(fontBold = False)
 
                         elif objType == 'Document':
                             tmpObj = Document.Document(groupNo)
@@ -2206,7 +2207,7 @@ class ReportGenerator(wx.Object):
 
                         if (itemRecord['Type'] == 'Quote'):
                             # Turn bold on.
-                            reportText.SetTxtStyle(fontBold =useBold)
+                            reportText.SetTxtStyle(fontBold = useBold)
                             # Add the header to the report
                             reportText.WriteText(_('Document:'))
                             # Turn bold off.

@@ -4084,47 +4084,11 @@ class ControlObject(object):
 
     def ChangeLanguages(self):
         """ Update all screen components to reflect change in the selected program language """
-        self.ClearAllWindows()
+        self.ClearAllWindows(clearAllTabs = True)
 
         self.CloseAllImages()
         self.CloseAllReports()
 
-##        # Let's look at the issue of database encoding.  We only need to do something if the encoding is NOT UTF-8
-##        # or if we're on Windows single-user version.
-##        if (TransanaGlobal.encoding != 'utf8') or \
-##           (('wxMSW' in wx.PlatformInfo) and (TransanaConstants.singleUserVersion)):
-##            # If it's not UTF-*, then if it is Russian, use KOI8r
-##            if TransanaGlobal.configData.language == 'ru':
-##                newEncoding = 'koi8_r'
-##            # If it's Chinese, use the appropriate Chinese encoding
-##            elif TransanaGlobal.configData.language == 'zh':
-##                newEncoding = TransanaConstants.chineseEncoding
-##            # If it's Eastern European Encoding, use 'iso8859_2'
-##            elif TransanaGlobal.configData.language == 'easteurope':
-##                newEncoding = 'iso8859_2'
-##            # If it's Greek, use 'iso8859_7'
-##            elif TransanaGlobal.configData.language == 'el':
-##                newEncoding = 'iso8859_7'
-##            # If it's Japanese, use cp932
-##            elif TransanaGlobal.configData.language == 'ja':
-##                newEncoding = 'cp932'
-##            # If it's Korean, use cp949
-##            elif TransanaGlobal.configData.language == 'ko':
-##                newEncoding = 'cp949'
-##            # Otherwise, fall back to UTF-8
-##            else:
-##                newEncoding = 'utf8'
-##
-##            # If we're changing encodings, we need to do a little work here!
-##            if newEncoding != TransanaGlobal.encoding:
-##                msg = _('Database encoding is changing.  To avoid potential data corruption, \nTransana must close your database before proceeding.')
-##                tmpDlg = Dialogs.InfoDialog(None, msg)
-##                tmpDlg.ShowModal()
-##                tmpDlg.Destroy()
-##
-##                # We should get a new database.  This call will actually update our encoding if needed!
-##                self.GetNewDatabase()
-                
         self.MenuWindow.ChangeLanguages()
         self.VisualizationWindow.ChangeLanguages()
         self.DataWindow.ChangeLanguages()

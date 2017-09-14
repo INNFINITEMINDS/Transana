@@ -82,20 +82,33 @@ class VideoPlayer(wx.Panel):
         # If Transana is installed in a folder that contains accented characters, we need to adjust the programDir to handle that
         if ('unicode' in wx.PlatformInfo) and isinstance(TransanaGlobal.programDir, str):
             TransanaGlobal.programDir = TransanaGlobal.programDir.decode('cp1250')
-        # Get the Splash Screen image
-        self.splashImage = TransanaImages.splash.GetImage()
-        if TransanaGlobal.configData.LayoutDirection == wx.Layout_RightToLeft:
-            self.splashImage = self.splashImage.Mirror()
-        # Get the size of the Video Player Panel
-        (width, height) = self.GetClientSize()
-        # Get a copy of the original image so the original is preserved, doesn't lose resolution.
-        self.splash = self.splashImage.Copy()
-        # Rescale the image to the size of the panel
-        self.splash.Rescale(width, height)
-        # Convert the image to a bitmap
-        self.graphic = wx.BitmapFromImage(self.splash)
-        # Place the Splash graphic on the panel
-        dc = wx.BufferedDC(wx.ClientDC(self), self.graphic)
+        # We're etting a sporadic exception here trying to find the Splash image.  It's RIGHT THERE, for god's sake.
+        # Anyway, let's trap it and ignore it.
+        try:
+            # Get the Splash Screen image
+            self.splashImage = TransanaImages.splash.GetImage()
+            if TransanaGlobal.configData.LayoutDirection == wx.Layout_RightToLeft:
+                self.splashImage = self.splashImage.Mirror()
+            # Get the size of the Video Player Panel
+            (width, height) = self.GetClientSize()
+            # Get a copy of the original image so the original is preserved, doesn't lose resolution.
+            self.splash = self.splashImage.Copy()
+            # Rescale the image to the size of the panel
+            self.splash.Rescale(width, height)
+            # Convert the image to a bitmap
+            self.graphic = wx.BitmapFromImage(self.splash)
+            # Place the Splash graphic on the panel
+            dc = wx.BufferedDC(wx.ClientDC(self), self.graphic)
+        except:
+
+            print "*** Splash Image in video_player EXCEPTION TRAPPED ***"
+            print sys.exc_info()[0]
+            print sys.exc_info()[1]
+            traceback.print_exc(file=sys.stdout)
+            print
+
+            # If we get an exception, just skip the splash image.
+            self.splashImage = None
 
         # Define timer for progress notification to other windows
         timerID = wx.NewId()
@@ -143,7 +156,6 @@ class VideoPlayer(wx.Panel):
         self.ProgressNotification.Stop()
         # Freeze the interface to speed up updates
         self.Freeze()
-        
         # If there is a media player already defined ...
         if self.movie:
             # ...destroy it ...
@@ -605,8 +617,8 @@ class VideoPlayer(wx.Panel):
             self.Stop()
 
     def OnPaint(self, event):
-        # If the movie player is NOT shown, we need to show the background image
-        if not self.movie.IsShown():
+        # If the movie player is NOT shown, and the Background Image is defined, we need to show the background image
+        if (not self.movie.IsShown()) and (self.splashImage != None):
             # Get the size of the Video Player Panel
             (width, height) = self.GetClientSize()
             # Get a COPY of the original splash image

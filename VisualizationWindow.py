@@ -1538,28 +1538,31 @@ class VisualizationWindow(wx.Dialog):
         # We had previously signalled that Audio Extraction was occurring.  That's over, so we can remove the signal.
         self.waveform.extractingAudio = False
 
-        # If we're in Hybrid mode, clear the visualization to prevent waveform contamination!
-        if self.VisualizationType == 'Hybrid':
-            self.ClearVisualization()
+        # If the user didn't change to a Text object while the conversion was underway ...
+        if not self.VisualizationType == 'Text-Keyword':
 
-        # If we have an Episode object ...
-        if isinstance(self.VisualizationObject, Episode.Episode):
-            # ... not the mediaStart and mediaLength
-            mediaStart  = 0
-            mediaLength = self.VisualizationObject.tape_length
-        # If we have a Clip ...
-        elif isinstance(self.VisualizationObject, Clip.Clip):
-            # ... not the mediaStart and mediaLength
-            mediaStart = self.VisualizationObject.clip_start
-            mediaLength = self.VisualizationObject.clip_stop - self.VisualizationObject.clip_start
+            # If we're in Hybrid mode, clear the visualization to prevent waveform contamination!
+            if self.VisualizationType == 'Hybrid':
+                self.ClearVisualization()
 
-        # Now that audio extraction is complete, signal that it's time to draw the Waveform Diagram during
-        # Idle time.
-        self.redrawWhenIdle = True
-        # Show the media position in the Current Time label
-        self.lbl_Current_Time.SetLabel(Misc.time_in_ms_to_str(mediaStart))
-        # Draw the TimeLine values
-        self.draw_timeline(mediaStart, mediaLength)
+            # If we have an Episode object ...
+            if isinstance(self.VisualizationObject, Episode.Episode):
+                # ... not the mediaStart and mediaLength
+                mediaStart  = 0
+                mediaLength = self.VisualizationObject.tape_length
+            # If we have a Clip ...
+            elif isinstance(self.VisualizationObject, Clip.Clip):
+                # ... not the mediaStart and mediaLength
+                mediaStart = self.VisualizationObject.clip_start
+                mediaLength = self.VisualizationObject.clip_stop - self.VisualizationObject.clip_start
+
+            # Now that audio extraction is complete, signal that it's time to draw the Waveform Diagram during
+            # Idle time.
+            self.redrawWhenIdle = True
+            # Show the media position in the Current Time label
+            self.lbl_Current_Time.SetLabel(Misc.time_in_ms_to_str(mediaStart))
+            # Draw the TimeLine values
+            self.draw_timeline(mediaStart, mediaLength)
 
     def draw_timeline(self, mediaStart, mediaLength):
         def GetScaleIncrements(MediaLength):

@@ -475,11 +475,12 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
         # NOTE:  "Fixed-Increment Time Code" works for version 2.42.  "&Media Conversion" works for 2.50.
         #        For 2.60, let's go with "Snapshot".  For 2.61, we'll use "SSL Client Key File"
         #        For 3.00, let's use "Libraries".
-        #        For 3.10, let;s use "Import Spreadsheet Data"
+        #        For 3.10, let's use "Import Spreadsheet Data"
+        #        For 3.20, let's use "Actual Location"
         # If you update this, also update the phrase
         # below in the OnOptionsLanguage method.)
         
-        if (outofdateLanguage != '') and ("Import Spreadsheet Data" == _("Import Spreadsheet Data")):
+        if (outofdateLanguage != '') and ("Actual Location" == _("Actual Location")):
             # If not, display an information message.
             dlg = Dialogs.InfoDialog(None, languageErrorPrompt)
             dlg.ShowModal()
@@ -1695,26 +1696,12 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                 TransanaGlobal.configData.language = 'de'
                 self.presLan_de.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
 
-            # Greek
-    #        elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_EL:
-    #            outofdateLanguage = 'Greek'
-    #            lang = wx.LANGUAGE_GREEK
-    #            TransanaGlobal.configData.language = 'el'
-    #            self.presLan_el.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
-
             # Spanish
             elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_ES:
                 outofdateLanguage = 'Spanish'
                 lang = wx.LANGUAGE_SPANISH
                 TransanaGlobal.configData.language = 'es'
                 self.presLan_es.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
-
-            # Finnish
-            elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_FI:
-                outofdateLanguage = 'Finnish'
-                lang = wx.LANGUAGE_FINNISH
-                TransanaGlobal.configData.language = 'fi'
-                self.presLan_fi.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
 
             # French
             elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_FR:
@@ -1769,26 +1756,6 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
                 TransanaGlobal.configData.language = 'nn'
                 self.presLan_nn.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
 
-            # Polish
-            elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_PL:
-                outofdateLanguage = 'Polish'
-                lang = wx.LANGUAGE_PORTUGUESE    # Polish spec causes an error message on my computer
-                TransanaGlobal.configData.language = 'pl'
-                self.presLan_pl.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
-            # Portuguese
-            elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_PT:
-                outofdateLanguage = 'Portuguese'
-                lang = wx.LANGUAGE_PORTUGUESE
-                TransanaGlobal.configData.language = 'pt'
-                self.presLan_pt.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
-
-            # Russian
-            elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_RU:
-                outofdateLanguage = 'Russian'
-                lang = wx.LANGUAGE_RUSSIAN   # Russian spec causes an error message on my computer
-                TransanaGlobal.configData.language = 'ru'
-                self.presLan_ru.install()  # Adding "unicode=1" here would eliminiate the need to declare translations strings at unicode() objects!!
-
             # Swedish
             elif  event.GetId() == MenuSetup.MENU_OPTIONS_LANGUAGE_SV:
                 outofdateLanguage = 'Swedish'
@@ -1842,9 +1809,10 @@ class MenuWindow(wx.Frame):  # wx.MDIParentFrame
             #        For 2.60, let's go with "Snapshot".  For 2.61, we'll use "SSL Client Key File".
             #        For 3.00, let's use "Libraries".
             #        For 3.10, let's use "Import Spreadsheet Data"
+            #        For 3.20, let's use "Actual Location"
             # If you update this, also update the phrase above in the __init__ method.)
             
-            if (outofdateLanguage != '') and ("Import Spreadsheet Data" == _("Import Spreadsheet Data")):
+            if (outofdateLanguage != '') and ("Actual Location" == _("Actual Location")):
                 # If not, display an information message.
                 prompt = "Transana's %s translation is no longer up-to-date.\nMissing prompts will be displayed in English.\n\nIf you are willing to help with this translation,\nplease contact David Woods at dwoods@transana.com." % outofdateLanguage
                 dlg = Dialogs.InfoDialog(None, prompt)

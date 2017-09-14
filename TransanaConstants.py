@@ -93,7 +93,7 @@ else:
 USESRTC = True
 
 # Indicates whether the Qualitative Data Exchange (QDA-XML) format is active
-QDA_XML = True
+QDA_XML = False
 
 if QDA_XML:
     versionNumber += '-QDE'
