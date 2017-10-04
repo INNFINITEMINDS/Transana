@@ -262,7 +262,7 @@ class XMLExport(Dialogs.GenForm):
     def CalcPercent(self, num):
         """ Calculate the Percent value to be displayed in the Progress Bar """
         # If we have a Qualitative Data Exchange file ...
-        if os.path.splitext(self.XMLFile.GetValue())[1].lower() in ['.qdc', '.qde']:
+        if not os.path.splitext(self.XMLFile.GetValue())[1].lower() in ['.qdc', '.qde']:
             # ... we may have 19 categories for export
             numCategories = 19.0
         # If we have a Transana-XML file ...
