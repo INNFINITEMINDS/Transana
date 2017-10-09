@@ -64,6 +64,8 @@ class QDAXMLHandler(xml.sax.ContentHandler):
             # Default Codes to Not Codable and a blank Definition
             self.currentObj[-1]['isCodable'] = False
             self.currentObj[-1]['definition'] = u''
+        elif self.element.upper() in ['SET', 'SETS']:
+            self.objType = None
 
         # Process QDA-XML Attributes
 
@@ -78,6 +80,12 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                 if self.objType in ['Keyword']:
                     # ... add the Attribute Value to the dictionary's appropriate Key
                     self.currentObj[-1]['colorDef'] = value
+##            # If the Attribute Key is DESCRIPTION ...
+##            elif key.upper() == u'DESCRIPTION':
+##                # If we have a Dictionary-style object ...
+##                if self.objType in ['Keyword']:
+##                    # ... add the Attribute Value to the dictionary's appropriate Key
+##                    self.currentObj[-1]['definition'] = value
             # If the Attribute Key is GUID ...
             elif key.upper() == u'GUID':
                 # If we have a Dictionary-style object ...
@@ -128,9 +136,9 @@ class QDAXMLHandler(xml.sax.ContentHandler):
 
         # If we don't have an Object Type or a Current Object or if the Current object is an empy Dictionary ...
         if (self.objType == None) or (self.currentObj == []) or (self.currentObj == [{}]) or \
-           (name.upper() in ['CODEBOOK', 'CODES', 'DESCRIPTION']):
-            # ... then we have nothing to do here.
-            pass
+           (name.upper() in ['CODEBOOK', 'CODES', 'DESCRIPTION', 'MEMBERCODE', 'SET', 'SETS']):
+            # ... then we remove the element type.
+            self.element = ''
         # If we have a Keyword Object ...
         elif self.objType == 'Keyword':
             # ... and the closing tag of a Code element ...
@@ -160,6 +168,8 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                     print 'Codable:    ', tmpObj['isCodable']
                     print
                     print
+            if name.upper() in ['CODE']:
+                self.element = ''
 
 
 
@@ -195,11 +205,11 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                 if keywordsInTransanaFormat:
 
                     # Keyword Groups (first-level Codes) are not directly codable in Transana
-                    if not(self.keywordsDict[key].has_key('parent')) and (self.keywordsDict[key]['isCodable'] == '1'):
+                    if not(self.keywordsDict[key].has_key('parent')) and (self.keywordsDict[key]['isCodable']):
                         keywordsInTransanaFormat = False
 
                         if DEBUG:
-                            print ' -- A', self.keywordsDict[key]['name'], self.keywordsDict[key]['parent'], self.keywordsDict[key]['isCodable']
+                            print ' -- A', self.keywordsDict[key]['name'], self.keywordsDict[key]['isCodable']
 
                     # Transana allows exactly two levels of keyword hierarchy.  Look for something with more than 2 levels.
                     if (self.keywordsDict[key].has_key('parent')) and (self.keywordsDict[self.keywordsDict[key]['parent']].has_key('parent')):
@@ -209,7 +219,7 @@ class QDAXMLHandler(xml.sax.ContentHandler):
                             print ' -- B', self.keywordsDict[key]['name'], self.keywordsDict[key]['parent'], self.keywordsDict[self.keywordsDict[key]['parent']].has_key('parent')
 
                     # Second Level Codes must be codable in Transana
-                    if (self.keywordsDict[key].has_key('parent')) and (self.keywordsDict[key]['isCodable'] == '0'):
+                    if (self.keywordsDict[key].has_key('parent')) and (not self.keywordsDict[key]['isCodable']):
                         keywordsInTransanaFormat = False
 
                         if DEBUG:
