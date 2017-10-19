@@ -28,6 +28,8 @@ import wx
 import datetime
 # import Python's os module
 import os
+# import Python's sys module
+import sys
 # import Python's types module
 import types
 # import Transana's Clip Keyword Object
@@ -329,214 +331,230 @@ class Document(DataObject.DataObject):
             # Get a database cursor
             c = DBInterface.get_db().cursor()
 
-            # If we're using transactions, start the transaction
-            if use_transactions:
-                c.execute('BEGIN')
+            try:
 
-            # If we're in Unicode mode, ...
-            if 'unicode' in wx.PlatformInfo:
-                # Encode strings to UTF8 before saving them.  The easiest way to handle this is to create local
-                # variables for the data.  We don't want to change the underlying object values.  Also, this way,
-                # we can continue to use the Unicode objects where we need the non-encoded version. (error messages.)
-                id = self.id.encode(TransanaGlobal.encoding)
-                # If the author is None in the database, we can't encode that!  Otherwise, we should encode.
-                if self.author != None:
-                    author = self.author.encode(TransanaGlobal.encoding)
+                # If we're using transactions, start the transaction
+                if use_transactions:
+                    c.execute('BEGIN')
+
+                # If we're in Unicode mode, ...
+                if 'unicode' in wx.PlatformInfo:
+                    # Encode strings to UTF8 before saving them.  The easiest way to handle this is to create local
+                    # variables for the data.  We don't want to change the underlying object values.  Also, this way,
+                    # we can continue to use the Unicode objects where we need the non-encoded version. (error messages.)
+                    id = self.id.encode(TransanaGlobal.encoding)
+                    # If the author is None in the database, we can't encode that!  Otherwise, we should encode.
+                    if self.author != None:
+                        author = self.author.encode(TransanaGlobal.encoding)
+                    else:
+                        author = self.author
+                    # If the comment is None in the database, we can't encode that!  Otherwise, we should encode.
+                    if self.comment != None:
+                        comment = self.comment.encode(TransanaGlobal.encoding)
+                    else:
+                        comment = self.comment
+                    # If the Imported File Name is None in the database, we can't encode that!  Otherwise, we should encode.
+                    if self.imported_file != None:
+                        imported_file = self.imported_file.encode(TransanaGlobal.encoding)
+                    else:
+                        imported_file = self.imported_file
+                    # Encode the plain text
+                    if self.plaintext != None:
+                        plaintext = self.plaintext.encode(TransanaGlobal.encoding)
+                    else:
+                        plaintext = self.plaintext
                 else:
+                    # If we don't need to encode the string values, we still need to copy them to our local variables.
+                    id = self.id
                     author = self.author
-                # If the comment is None in the database, we can't encode that!  Otherwise, we should encode.
-                if self.comment != None:
-                    comment = self.comment.encode(TransanaGlobal.encoding)
-                else:
                     comment = self.comment
-                # If the Imported File Name is None in the database, we can't encode that!  Otherwise, we should encode.
-                if self.imported_file != None:
-                    imported_file = self.imported_file.encode(TransanaGlobal.encoding)
-                else:
                     imported_file = self.imported_file
-                # Encode the plain text
-                if self.plaintext != None:
-                    plaintext = self.plaintext.encode(TransanaGlobal.encoding)
-                else:
                     plaintext = self.plaintext
-            else:
-                # If we don't need to encode the string values, we still need to copy them to our local variables.
-                id = self.id
-                author = self.author
-                comment = self.comment
-                imported_file = self.imported_file
-                plaintext = self.plaintext
 
-            # If we did not load the text, we cannot save it!
-            if self.skipText:
-                fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "LastSaveTime")
-                values = (id, self.library_num, author, comment, imported_file)
-            # If we loaded the text, we need to save it!
-            else:
-                if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
-                    # If we're using transactions, start the transaction
-                    if use_transactions:
-                        c.execute('ROLLBACK')
-                    raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
-
-                fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
-                values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text, plaintext)
-
-            if (self._db_start_save() == 0):
-                # Duplicate Document IDs within a Library are not allowed.
-                if DBInterface.record_match_count("Documents2", ("DocumentID", "LibraryNum"), (id, self.library_num)) > 0:
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
-                    else:
-                        prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
-                    # If we're using transactions, start the transaction
-                    if use_transactions:
-                        c.execute('ROLLBACK')
-                    raise SaveError, prompt % self.id
-                # Duplicate Document ID with an Episode ID within a Library are not allowed.
-                if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"), (id, self.library_num)) > 0:
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
-                    else:
-                        prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
-                    # If we're using transactions, start the transaction
-                    if use_transactions:
-                        c.execute('ROLLBACK')
-                    raise SaveError, prompt % self.id
-
-                # Add the ImportDate information
-                fields += ("ImportDate", )
-                values += ('%s' % datetime.datetime.now().strftime('%Y-%m-%d %H:%m:%S'),)
-
-                # insert the new record
-                query = "INSERT INTO Documents2\n("
-                for field in fields:
-                    query = "%s%s," % (query, field)
-                query = query[:-1] + ')'
-                query = "%s\nVALUES\n(" % query
-                for value in values:
-                    query = "%s%%s," % query
-                # The last data value should be the SERVER's time stamp because we don't know if the clients are synchronized.
-                # Even a couple minutes difference can cause problems, but with time zones, the different could be hours!
-                query += 'CURRENT_TIMESTAMP)'
-
-                if DEBUG:
-                    import Dialogs
-                    msg = query % values
-                    dlg = Dialogs.InfoDialog(None, msg)
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                # Adjust the query for sqlite if needed
-                query = DBInterface.FixQuery(query)
-                # Execure the Save query
-                c.execute(query, values)
-
-            else:
-                # Duplicate Document IDs within a Library are not allowed.
-                if DBInterface.record_match_count("Documents2", ("DocumentID", "!DocumentNum", "LibraryNum"),
-                        (id, self.number, self.library_num)) > 0:
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
-                    else:
-                        prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
-                    # If we're using transactions, start the transaction
-                    if use_transactions:
-                        c.execute('ROLLBACK')
-                    raise SaveError, prompt % self.id
-                # Duplicate Document ID with Episode ID within a Library are not allowed.
-                if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"),
-                        (id, self.library_num)) > 0:
-                    if 'unicode' in wx.PlatformInfo:
-                        # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-                        prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
-                    else:
-                        prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
-                    # If we're using transactions, start the transaction
-                    if use_transactions:
-                        c.execute('ROLLBACK')
-                    raise SaveError, prompt % self.id
-
-                # If we loaded the text, we should update it.
-                if not self.skipText:
-                    # OK to update the episode record
-                    query = """UPDATE Documents2
-                        SET DocumentID = %s,
-                            LibraryNum = %s,
-                            Author = %s,
-                            Comment = %s,
-                            ImportedFile = %s,
-                            DocumentLength = %s,
-                            XMLText = %s,
-                            PlainText = %s,
-                            LastSaveTime = CURRENT_TIMESTAMP
-                        WHERE DocumentNum = %s
-                    """
-                # If we did not load the text, we cannot update it.
+                # If we did not load the text, we cannot save it!
+                if self.skipText:
+                    fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "LastSaveTime")
+                    values = (id, self.library_num, author, comment, imported_file)
+                # If we loaded the text, we need to save it!
                 else:
-                    # OK to update the episode record
-                    query = """UPDATE Documents2
-                        SET DocumentID = %s,
-                            LibraryNum = %s,
-                            Author = %s,
-                            Comment = %s,
-                            ImportedFile = %s,
-                            LastSaveTime = CURRENT_TIMESTAMP
-                        WHERE DocumentNum = %s
-                    """
-                # Add the Document Num to the query values
-                values = values + (self.number,)
+                    if (len(self.text) > TransanaGlobal.max_allowed_packet):   # 8388000
+                        # If we're using transactions, cancel the transaction
+                        if use_transactions:
+                            c.execute('ROLLBACK')
+                        raise SaveError, _("This document is too large for the database.  Please shorten it, split it into two parts\nor if you are importing an RTF document, remove some unnecessary RTF encoding.")
 
-                if DEBUG:
-                    import Dialogs
-                    msg = query % values
-                    dlg = Dialogs.InfoDialog(None, msg)
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                # Adjust the query for sqlite if needed
-                query = DBInterface.FixQuery(query)
-                # Execure the Save query
-                c.execute(query, values)
+                    fields = ("DocumentID", "LibraryNum", "Author", "Comment", "ImportedFile", "DocumentLength", "XMLText", "PlainText", "LastSaveTime")
+                    values = (id, self.library_num, author, comment, imported_file, self.document_length, self.text, plaintext)
 
-                # If we loaded the text, we need to update Quote Positions.  If we didn't, we don't.
-                if not self.skipText:
+                if (self._db_start_save() == 0):
+                    # Duplicate Document IDs within a Library are not allowed.
+                    if DBInterface.record_match_count("Documents2", ("DocumentID", "LibraryNum"), (id, self.library_num)) > 0:
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
+                        else:
+                            prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                        # If we're using transactions, cancel the transaction
+                        if use_transactions:
+                            c.execute('ROLLBACK')
+                        raise SaveError, prompt % self.id
+                    # Duplicate Document ID with an Episode ID within a Library are not allowed.
+                    if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"), (id, self.library_num)) > 0:
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
+                        else:
+                            prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                        # If we're using transactions, cancel the transaction
+                        if use_transactions:
+                            c.execute('ROLLBACK')
+                        raise SaveError, prompt % self.id
 
-                    # We need to add the Start and End Character Position information 
-                    # to the QuotePositions Table.  (A new Document won't have any Quotes yet.)
+                    # Add the ImportDate information
+                    fields += ("ImportDate", )
+                    values += ('%s' % datetime.datetime.now().strftime('%Y-%m-%d %H:%m:%S'),)
 
-                    # First, delete old data if it exists
-                    query = "DELETE FROM QuotePositions2 WHERE DocumentNum = %s"
+                    # insert the new record
+                    query = "INSERT INTO Documents2\n("
+                    for field in fields:
+                        query = "%s%s," % (query, field)
+                    query = query[:-1] + ')'
+                    query = "%s\nVALUES\n(" % query
+                    for value in values:
+                        query = "%s%%s," % query
+                    # The last data value should be the SERVER's time stamp because we don't know if the clients are synchronized.
+                    # Even a couple minutes difference can cause problems, but with time zones, the different could be hours!
+                    query += 'CURRENT_TIMESTAMP)'
+
+                    if DEBUG:
+                        import Dialogs
+                        msg = query % values
+                        dlg = Dialogs.InfoDialog(None, msg)
+                        dlg.ShowModal()
+                        dlg.Destroy()
                     # Adjust the query for sqlite if needed
                     query = DBInterface.FixQuery(query)
-                    # Execute the query
-                    c.execute(query, (self.number, ))
-                    # If there are Quotes in the Quote Dictionary ...
-                    if len(self.quote_dict) > 0:
-                        # Add MySQL-specific bulk insert SQL
-                        if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
-                            query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
-                            values = ()
-                            for key in self.quote_dict.keys():
-                                query += "(%s, %s, %s, %s), "
-                                values += (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
-                            # Strip the final comma off the query!
-                            query = query[:-2]
-                            # Adjust the query for sqlite if needed
-                            query = DBInterface.FixQuery(query)
-                            # Execute the query
-                            c.execute(query, values)
-                        else:
+                    # Execure the Save query
+                    c.execute(query, values)
 
-                            query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
-                            query += "(%s, %s, %s, %s) "
-                            for key in self.quote_dict.keys():
-                                values = (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
+                else:
+                    # Duplicate Document IDs within a Library are not allowed.
+                    if DBInterface.record_match_count("Documents2", ("DocumentID", "!DocumentNum", "LibraryNum"),
+                            (id, self.number, self.library_num)) > 0:
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
+                        else:
+                            prompt = _('A Document named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                        # If we're using transactions, cancel the transaction
+                        if use_transactions:
+                            c.execute('ROLLBACK')
+                        raise SaveError, prompt % self.id
+                    # Duplicate Document ID with Episode ID within a Library are not allowed.
+                    if DBInterface.record_match_count("Episodes2", ("EpisodeID", "SeriesNum"),
+                            (id, self.library_num)) > 0:
+                        if 'unicode' in wx.PlatformInfo:
+                            # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
+                            prompt = unicode(_('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.'), 'utf8')
+                        else:
+                            prompt = _('An Episode named "%s" already exists in this Library.\nPlease enter a different Document ID.')
+                        # If we're using transactions, cancel the transaction
+                        if use_transactions:
+                            c.execute('ROLLBACK')
+                        raise SaveError, prompt % self.id
+
+                    # If we loaded the text, we should update it.
+                    if not self.skipText:
+                        # OK to update the episode record
+                        query = """UPDATE Documents2
+                            SET DocumentID = %s,
+                                LibraryNum = %s,
+                                Author = %s,
+                                Comment = %s,
+                                ImportedFile = %s,
+                                DocumentLength = %s,
+                                XMLText = %s,
+                                PlainText = %s,
+                                LastSaveTime = CURRENT_TIMESTAMP
+                            WHERE DocumentNum = %s
+                        """
+                    # If we did not load the text, we cannot update it.
+                    else:
+                        # OK to update the episode record
+                        query = """UPDATE Documents2
+                            SET DocumentID = %s,
+                                LibraryNum = %s,
+                                Author = %s,
+                                Comment = %s,
+                                ImportedFile = %s,
+                                LastSaveTime = CURRENT_TIMESTAMP
+                            WHERE DocumentNum = %s
+                        """
+                    # Add the Document Num to the query values
+                    values = values + (self.number,)
+
+                    if DEBUG:
+                        import Dialogs
+                        msg = query % values
+                        dlg = Dialogs.InfoDialog(None, msg)
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                    # Adjust the query for sqlite if needed
+                    query = DBInterface.FixQuery(query)
+                    # Execure the Save query
+                    c.execute(query, values)
+
+                    # If we loaded the text, we need to update Quote Positions.  If we didn't, we don't.
+                    if not self.skipText:
+
+                        # We need to add the Start and End Character Position information 
+                        # to the QuotePositions Table.  (A new Document won't have any Quotes yet.)
+
+                        # First, delete old data if it exists
+                        query = "DELETE FROM QuotePositions2 WHERE DocumentNum = %s"
+                        # Adjust the query for sqlite if needed
+                        query = DBInterface.FixQuery(query)
+                        # Execute the query
+                        c.execute(query, (self.number, ))
+                        # If there are Quotes in the Quote Dictionary ...
+                        if len(self.quote_dict) > 0:
+                            # Add MySQL-specific bulk insert SQL
+                            if TransanaConstants.DBInstalled in ['MySQLdb-embedded', 'MySQLdb-server', 'PyMySQL']:
+                                query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
+                                values = ()
+                                for key in self.quote_dict.keys():
+                                    query += "(%s, %s, %s, %s), "
+                                    values += (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
+                                # Strip the final comma off the query!
+                                query = query[:-2]
                                 # Adjust the query for sqlite if needed
                                 query = DBInterface.FixQuery(query)
                                 # Execute the query
                                 c.execute(query, values)
+                            else:
+
+                                query = "INSERT INTO QuotePositions2 (QuoteNum, DocumentNum, StartChar, EndChar) VALUES "
+                                query += "(%s, %s, %s, %s) "
+                                for key in self.quote_dict.keys():
+                                    values = (key, self.number, self.quote_dict[key][0], self.quote_dict[key][1])
+                                    # Adjust the query for sqlite if needed
+                                    query = DBInterface.FixQuery(query)
+                                    # Execute the query
+                                    c.execute(query, values)
+            except:
+
+                if DEBUG:
+                    exc = sys.exc_info()
+                    print exc[0]
+                    print exc[1]
+
+                    import traceback
+                    traceback.print_exc()
+
+                # If we're using transactions, cancel the transaction
+                if use_transactions:
+                    c.execute('ROLLBACK')
+                raise 
 
             # If the object number is 0, we have a new object
             if self.number == 0:
@@ -567,7 +585,7 @@ class Document(DataObject.DataObject):
                     self.lastsavetime = recs[0][2]
                 # If we don't have a single record ...
                 else:
-                    # If we're using transactions, start the transaction
+                    # If we're using transactions, cancel the transaction
                     if use_transactions:
                         c.execute('ROLLBACK')
                     # ... raise an exception
@@ -599,7 +617,7 @@ class Document(DataObject.DataObject):
                     self.lastsavetime = recs[0][0]
                 # If we don't have a single record ...
                 else:
-                    # If we're using transactions, start the transaction
+                    # If we're using transactions, cancel the transaction
                     if use_transactions:
                         c.execute('ROLLBACK')
                     # ... raise an exception
@@ -632,7 +650,7 @@ class Document(DataObject.DataObject):
                     # ... change it back to zero!!
                     self.number = 0
                 if use_transactions:
-                    # Undo the database save transaction
+                    # Undo the database cancel the transaction
                     c.execute('ROLLBACK')
                 # Close the Database Cursor
                 c.close()

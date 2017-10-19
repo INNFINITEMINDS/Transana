@@ -431,7 +431,7 @@ class Episode(DataObject.DataObject):
                 # ... change it back to zero!!
                 self.number = 0
             if use_transactions:
-                # Undo the database save transaction
+                # Undo the database cancel the transaction
                 c.execute('ROLLBACK')
             # Close the Database Cursor
             c.close()
