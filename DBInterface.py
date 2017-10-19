@@ -5686,13 +5686,27 @@ def UpdateDBFilenames(parent, filePath, fileList, newName=''):
     if success:
         DBCursor.execute("COMMIT")
         if 'unicode' in wx.PlatformInfo:
+            if len(fileList) == 1:
+                prompt = unicode(_("File:  %s\n\n"), 'utf8')
+                data = (fileList[0],)
+            else:
+                prompt = u''
+                data = ()
             # Encode with UTF-8 rather than TransanaGlobal.encoding because this is a prompt, not DB Data.
-            prompt = unicode(_("%s Episode Records have been updated.\n%s Clip Records have been updated."), 'utf8')
+            prompt += unicode(_("%s Episode Records have been updated.\n%s Clip Records have been updated."), 'utf8')
             prompt += '\n' + unicode(_("%s Snapshot Records have been updated."), 'utf8')
+            data += (episodeCounter, clipCounter, snapshotCounter)
         else:
-            prompt = _("%s Episode Records have been updated.\n%s Clip Records have been updated.")
+            if len(fileList) == 1:
+                prompt = _("File:  %s\n\n")
+                data = (fileList[0],)
+            else:
+                prompt = u''
+                data = ()
+            prompt += _("%s Episode Records have been updated.\n%s Clip Records have been updated.")
             prompt += '\n' + _("%s Snapshot Records have been updated.")
-        infodlg = Dialogs.InfoDialog(None, prompt % (episodeCounter, clipCounter, snapshotCounter))
+            data += (episodeCounter, clipCounter, snapshotCounter)
+        infodlg = Dialogs.InfoDialog(None, prompt % data)
         infodlg.ShowModal()
         infodlg.Destroy()
     # Otherwise, Roll the Transaction Back.

@@ -463,16 +463,16 @@ class MissingFiles(wx.Dialog, wx.lib.mixins.listctrl.ColumnSorterMixin):
                         fs = Misc.convertMacFilename(fs)
                     # Split the new file name into path and file name
                     (actualPath, newFileName) = os.path.split(fs)
-                # ... update all copies of the file in the Database with the new File Path
-                if not DBInterface.UpdateDBFilenames(self, actualPath, [fileName], newName=newFileName):
-                    # If some or all of the records could not be updated, display an error message
-                    infodlg = Dialogs.InfoDialog(self, _('Update Failed.  Some records that would be affected may be locked by another user.'))
-                    infodlg.ShowModal()
-                    infodlg.Destroy()
-                # If the update succeeeded ...
-                else:
-                    # ... we can remove this item from the Missing Files list
-                    entriesToDelete.append(sel)
+                    # ... update all copies of the file in the Database with the new File Path
+                    if not DBInterface.UpdateDBFilenames(self, actualPath, [fileName], newName=newFileName):
+                        # If some or all of the records could not be updated, display an error message
+                        infodlg = Dialogs.InfoDialog(self, _('Update Failed.  Some records that would be affected may be locked by another user.'))
+                        infodlg.ShowModal()
+                        infodlg.Destroy()
+                    # If the update succeeeded ...
+                    else:
+                        # ... we can remove this item from the Missing Files list
+                        entriesToDelete.append(sel)
 
             # Move on to the next selection in the Missing Files List, if there is one
             sel = self.fileList.GetNextSelected(sel)
