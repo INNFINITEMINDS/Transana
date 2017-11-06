@@ -3562,7 +3562,7 @@ class TranscriptEditor(RichTextEditCtrl):
     def InsertHyperlink(self, linkType = None, objNum = -1):
         """ Insert a Hyperlink to a Quote, Clip, or Snapshot into a Document or Transcript """
         # If we know the Snapshot Number ...
-        if objNum > -1:
+        if objNum > 0:
             # Define a Hyperlink Style (Blue, underlined)
             urlStyle = richtext.RichTextAttr()
 #            urlStyle.SetFontFaceName('Courier New')
