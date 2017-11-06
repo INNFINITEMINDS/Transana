@@ -261,8 +261,8 @@ class TranscriptPropertiesForm(Dialogs.GenForm):
                 self.obj.minTranscriptWidth = 0
             # Get the Media File to import
             fileName = d[_('DOCX/RTF/XML/TXT File to import  (optional)')]
-            # If no file to import is specified, see if there is a default template
-            if not fileName:
+            # If we have a new transcript an no file to import is specified, see if there is a default template
+            if (self.obj.number == 0) and (len(self.obj.text) == 0) and (not fileName):
                 # Define potential default template options
                 fNames = ('default.xml', 'default.docx', 'default.rtf')
                 for fName in fNames:
@@ -274,7 +274,7 @@ class TranscriptPropertiesForm(Dialogs.GenForm):
                         fileName = fName
                         # ... and we should stop looking
                         break
-                
+
             # If a media file is entered ...
             if fileName:
                 # Separate the path/filename from the file extension.  Extension is a proxy for file type.
