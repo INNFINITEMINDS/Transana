@@ -2657,13 +2657,27 @@ def dictionary_of_documents_and_episodes(library=None):
     d = {}
     # Initialize docs to an empty list in case we're in the Basic version.
     docs = []
+    # If library information is passed in ...
     if library != None:
+        # ... in the form of a Library object ...
+        if isinstance(library, Library.Library):
+            # ... get the library number and name
+            libNum = library.number
+            libName = library.id
+        # ... in the form of a tuple (to avoid having to load a Library object during QDA-XML export, for example)
+        elif isinstance(library, tuple):
+            # ... get the library number and name
+            libNum = library[0]
+            libName = library[1]
+        # If unknown data is passed in, return an empty dictionary
+        else:
+            return d
         # Don't return Documents for the Basic version!
         if TransanaConstants.proVersion:
             # Get all the Documents for this Library
-            docs = list_of_documents(library.number)
+            docs = list_of_documents(libNum)
         # Get all the Episodes for this Library    
-        episodes = list_of_episodes_for_series(library.id)
+        episodes = list_of_episodes_for_series(libName)
     else:
         # Don't return Documents for the Basic version!
         if TransanaConstants.proVersion:
@@ -4392,6 +4406,40 @@ def list_of_external_files():
     dbCursor.close()
     # Return the list of results
     return result
+
+def GetMissingFilesList():
+    """ Get a list of files in the Transana Database that are not in the expected location on the hard drive. """
+    # Get the Media Library Directory
+    mediaDir = TransanaGlobal.configData.videoPath.replace('\\', '/')
+    # Get a list of all external files (Media and Image files) from the Database
+    fileList = list_of_external_files()
+    # Create an empty list for the files that are missing
+    missingFiles = []
+    # Iterate through the list of external files
+    for (filename, objType, objNum) in fileList:
+        # Note whether the FileName uses the Media Library Directory setting or not.
+        # Detection of the use of the Media Library Directory is platform-dependent.
+        if wx.Platform == "__WXMSW__":
+            # On Windows, check for a colon in the second position, which signals the presence or absence of a drive letter
+            useMediaDir = (filename[1] != ':') and (filename[:2] != '\\\\')
+        else:
+            # On Mac OS-X and *nix, check for a slash in the first position for the root folder designation
+            useMediaDir = (filename[0] != '/')
+        # If we are using the Media Library Directory ...
+        if useMediaDir:
+            # ... add it to the Filename to get the full file path
+            filename = mediaDir + filename.replace('\\', '/')
+        # Otherwise ...
+        else:
+            # ... we shouls already have the full path
+            filename = filename.replace('\\', '/')
+
+        # If the file does not exist ...
+        if not os.path.exists(filename):
+            # Add the missing file to the results list
+            missingFiles.append(filename)
+    # Return the list of missing files
+    return missingFiles
 
 def IsDatabaseEmpty():
     """ Returns True if the database is empty, False if there are ANY data records """
