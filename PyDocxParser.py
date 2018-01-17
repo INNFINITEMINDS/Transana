@@ -43,7 +43,7 @@ class PyRichTextDocxHandler(richtext.RichTextFileHandler):
         by David K. Woods (dwoods@wcer.wisc.edu) """
 
     def __init__(self, name='DOCx', ext='docx'):
-        """ Initialize the RichTextRTF Handler.
+        """ Initialize the RichText DOCx Handler.
               Parameters:  name='DOCx'
                            ext='docx' """
         # Save the Handler Name
@@ -56,11 +56,11 @@ class PyRichTextDocxHandler(richtext.RichTextFileHandler):
         return os.path.splitext(filename)[1].lower() == ('.' + self._ext)
 
     def CanLoad(self):
-        """ Can you load an RTF File with this handler? """
+        """ Can you load a DOCx File with this handler? """
         return True
 
     def CanSave(self):
-        """ Can you save an RTF File with this handler? """
+        """ Can you save a DOCx File with this handler? """
         return True
 
     def DoLoadFile(self, buf, stream):
@@ -94,7 +94,7 @@ class PyRichTextDocxHandler(richtext.RichTextFileHandler):
             Parameters:  ctrl       a wxRichTextCtrl.  (NOT a wxRichTextBuffer.  The wxRichTextBuffer lacks methods for direct manipulation.)
                          filename   the name of the file to be loaded """
         if os.path.exists(filename) and isinstance(ctrl, richtext.RichTextCtrl):
-            # Use the RTFToRichTextCtrlParser to handle the file load
+            # Use the DocxToRichTextCtrlParser to handle the file load
             DocxTowxRichTextCtrlParser(ctrl, filename=filename, encoding=self.GetEncoding())
             # There's no feedback from the Parser, so we'll just assume things loaded.
             return True
@@ -104,7 +104,7 @@ class PyRichTextDocxHandler(richtext.RichTextFileHandler):
 ##    def LoadString(self, ctrl, buf, insertionPoint=None, displayProgress=True):
 ##        """ Load the contents of a Rich Text Format string buffer into a wxRichTextCtrl.
 ##            Parameters:  ctrl       a wxRichTextCtrl.  (NOT a wxRichTextBuffer.  The wxRichTextBuffer lacks methods for direct manipulation.)
-##                         buf        the RTF string data to be loaded """
+##                         buf        the DOCx string data to be loaded """
 ##        if (len(buf) > 0) and isinstance(ctrl, richtext.RichTextCtrl):
 ##
 ##            # At least in Transana, if the buffer is a unicode object, processing is MUCH, MUCH slower, like more than
@@ -113,7 +113,7 @@ class PyRichTextDocxHandler(richtext.RichTextFileHandler):
 ##            if isinstance(buf, unicode):
 ##                buf = buf.encode(self.GetEncoding())
 ##                
-##            # Use the RTFToRichTextCtrlParser to handle the file load
+##            # Use the DocxToRichTextCtrlParser to handle the file load
 ##            DocxTowxRichTextCtrlParser(ctrl, buf=buf, insertionPoint=insertionPoint, encoding=self.GetEncoding(), displayProgress=displayProgress)
 ##            # There's no feedback from the Parser, so we'll just assume things loaded.
 ##            return True
@@ -281,7 +281,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
         self.image_num = 0
 
         # Highlight Colors defined in Microsoft Word and in Transana need to be translated into python_docx constants.
-        # I find a few of these translations puzzling, but this is what Word does given fully-defined colors in RTF files.
+        # I find a few of these translations puzzling, but this is what Word does given fully-defined colors in DOCs files.
         enum = docx.enum.text.WD_COLOR_INDEX
         self.colorConversions = { # enum.AUTO          :  None,                     # Word:  Automatic
                                  "#000000": enum.BLACK,          # Word:  Black
@@ -546,7 +546,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
             par_format.first_line_indent = docx.shared.Mm(firstlineindent / 10.0)
             par_format.right_indent = docx.shared.Mm(rightindent / 10.0)
 
-            # Add non-zero Spacing before and after paragraphs to the RTF output String
+            # Add non-zero Spacing before and after paragraphs to the DOCx output String
             if int(self.paragraphAttributes[u'paragraph'][u'parspacingbefore']) != 0:
                 par_format.space_before = docx.shared.Mm(float(self.paragraphAttributes[u'paragraph'][u'parspacingbefore']) / 10.0)
             if int(self.paragraphAttributes[u'paragraph'][u'parspacingafter']) > 0:
@@ -615,7 +615,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
                 if (self.fontAttributes[self.element][u'bgcolor'].upper() in self.colorConversions.keys()):
                     # If Text Background Color is not White ...
                     if (self.fontAttributes[self.element][u'bgcolor'] != '#FFFFFF'):
-                        # ... Add text background color to the RTF output string
+                        # ... Add text background color to the DOCx output string
                         run.font.highlight_color = self.colorConversions[self.fontAttributes[self.element][u'bgcolor'].upper()]
 
                 else:
@@ -626,8 +626,11 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
 
 ##            # If we have a value in self.URL, populated in startElement, ...
 ##            if self.url != '':
-##                # ... then we're in the midst of a hyperlink.  Let's specify the URL for the RTF output string.
+##                # ... then we're in the midst of a hyperlink.  Let's specify the URL for the DOCx output string.
 ##                self.outputString.write('{\\field{\\*\\fldinst HYPERLINK "%s"}{\\fldrslt ' % self.url)
+
+            if DEBUG:
+                print "  -->  ", data.encode('utf8')
 
 
             # If we have more than whitespace ...
@@ -636,27 +639,54 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
                 run.text = data
                     
 ##                # If we're in Transana, time code data if followed by a "(space)(quotationmark)" combination from the XML.
-##                # I'm not sure why, but this causes problems in the RTF.  Therefore skip this combo in Transana
+##                # I'm not sure why, but this causes problems in the DOCx.  Therefore skip this combo in Transana
 ##                if not (IN_TRANSANA and (data == ' "')):
-##                    # Encode the data and add it to the RTF output string
+##                    # Encode the data and add it to the DOCx output string
 ##                self.outputString.write(data.encode(self.encoding))
 
 ##            # If we've just added a URL hyperlink ...
 ##            if self.url != '':
-##                # ... we need to close the link field RTF block
+##                # ... we need to close the link field DOCx block
 ##                self.outputString.write('}}')
 ##                # Reset the URL to empty, as we're done with it.
 ##                self.url = ''
 
         # If the characters come from a symbol element ...
         elif self.element == 'symbol':
+
+            if DEBUG:
+                print "PyDocxParser.characters(): element == symbol: '%s'" % data
+            
             # Check that we don't have only whitespace, we don't have a multi-character string, and
             # we don't have a newline character.
             if (len(data.strip()) > 0) and ((len(data) != 1) or (ord(data) != 10)):
-                # Convert the symbol data to the appropriate unicode character
-                data = unichr(int(data))
-                # Add that unicode character to the RTF output string
-                run.text = data
+
+                try:
+                    # Convert the symbol data to the appropriate unicode character
+                    data = unichr(int(data))
+                    # Add that unicode character to the DOCx output string
+                    run.text = data
+                except ValueError, e:
+
+                    if DEBUG:
+                        print "PyDocxParser.XMLToDocxHandler.characters():  ValueError", len(data)
+                    
+                        for x in range(len(data)):
+                            print x, ord(data[x])
+                        print
+                        
+                    if len(data) == 1:
+                        try:
+                            run.text = unichr(ord(data))
+                        except:
+                            run.text = '?'
+                    else:
+                        run.text = '(Unknown Character)'
+                except:
+                    run.text = '(Unknown Character)'
+
+                    print "Unknown Character: '%s' - %d" % (data, int(data))
+                    print
 
 
         # If the characters come from a data element ...
@@ -702,7 +732,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
             # I haven't seen anything but PNG image data in this data structure from the RichTextCtrl's XML data
             else:
                 # If we're dealing with an image, we could convert the image to PNG, then do a Hex conversion.
-                # RTF can also JPEG images directly, as well as Enhanced Metafiles, Windows Metafiles, QuickDraw
+                # DOCx can also JPEG images directly, as well as Enhanced Metafiles, Windows Metafiles, QuickDraw
                 # pictures, none of which I think wxPython can handle.
                 print "I don't know how to handle the data!!"
 
@@ -710,7 +740,7 @@ class XMLToDocxHandler(xml.sax.handler.ContentHandler):
             self.element = None
 
     def saveFile(self, filename):
-        """ Save the RTF Output String to a file or to a StringIO object """
+        """ Save the DOCx Output String to a file or to a StringIO object """
 
         try:
             self.document.save(filename)
@@ -1099,11 +1129,11 @@ class DocxTowxRichTextCtrlParser:
 if __name__ == '__main__':
     # Create an xml.sax parser
     parser = xml.sax.make_parser()
-    # Define our XML to RTF Handler
+    # Define our XML to DOCx Handler
     handler = XMLToDocxHandler()
     # Set the parser to use the handler
     parser.setContentHandler(handler)
     # Open a test XML file, 'test.xml', which should be created by saving XML from a wxRichTextCtrl, and parse it
     parser.parse("test.xml")
-    # Save the resulting RTF string to a file called 'text.rtf'
-    handler.saveFile("test.rtf")
+    # Save the resulting DOCx string to a file called 'text.rtf'
+    handler.saveFile("test.docx")
