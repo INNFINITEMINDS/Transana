@@ -158,9 +158,6 @@ class MissingFiles(wx.Dialog, wx.lib.mixins.listctrl.ColumnSorterMixin):
 
     def UpdateMissingFileList(self):
         """ (Re)populate the Missing Files List """
-        # Get the Media Library Directory
-        mediaDir = TransanaGlobal.configData.videoPath.replace('\\', '/')
-
         # Clear the Missing File List
         self.fileList.ClearAll()
         # Define columns for missing files, their expected location and the location where they are actually found
@@ -172,41 +169,22 @@ class MissingFiles(wx.Dialog, wx.lib.mixins.listctrl.ColumnSorterMixin):
         self.itemDataMap = {}
         # Initialize a counter which serves as the key to the item data dictionary
         counter = 0
-        # Get a list of all external files (Media and Image files) from the Database
-        fileList = DBInterface.list_of_external_files()
-        # Iterate through the list of external files
-        for (filename, objType, objNum) in fileList:
-            # Note whether the FileName uses the Media Library Directory setting or not.
-            # Detection of the use of the Media Library Directory is platform-dependent.
-            if wx.Platform == "__WXMSW__":
-                # On Windows, check for a colon in the second position, which signals the presence or absence of a drive letter
-                useMediaDir = (filename[1] != ':') and (filename[:2] != '\\\\')
-            else:
-                # On Mac OS-X and *nix, check for a slash in the first position for the root folder designation
-                useMediaDir = (filename[0] != '/')
-            # If we are using the Media Library Directory ...
-            if useMediaDir:
-                # ... add it to the Filename to get the full file path
-                filename = mediaDir + filename.replace('\\', '/')
-            # Otherwise ...
-            else:
-                # ... we shouls already have the full path
-                filename = filename.replace('\\', '/')
-
-            # If the file does not exist ...
-            if not os.path.exists(filename):
-                # ... separate the Path and the File Name
-                (fDir, fName) = os.path.split(filename)
-                # Create a new Row in the File List, placing the File Name in the first Column
-                index = self.fileList.InsertStringItem(sys.maxint, fName)
-                # Add the Expected Path (where the file is NOT!) in the second column.  Leave the third column blank for now.
-                self.fileList.SetStringItem(index, 1, fDir)
-                # Add the data to the item data dictionary for the sorter
-                self.itemDataMap[counter] = (fName, fDir, '')
-                # Set the Missing File List's item data
-                self.fileList.SetItemData(index, counter)
-                # Increment the counter
-                counter += 1
+        # Get a list of all missing external files (Media and Image files) from the Database
+        fileList = DBInterface.GetMissingFilesList()
+        # Iterate through the list of missing files
+        for filename in fileList:
+            # ... separate the Path and the File Name
+            (fDir, fName) = os.path.split(filename)
+            # Create a new Row in the File List, placing the File Name in the first Column
+            index = self.fileList.InsertStringItem(sys.maxint, fName)
+            # Add the Expected Path (where the file is NOT!) in the second column.  Leave the third column blank for now.
+            self.fileList.SetStringItem(index, 1, fDir)
+            # Add the data to the item data dictionary for the sorter
+            self.itemDataMap[counter] = (fName, fDir, '')
+            # Set the Missing File List's item data
+            self.fileList.SetItemData(index, counter)
+            # Increment the counter
+            counter += 1
         # Sort by the first column
         self.SortListItems(0)
         # Column widths have proven more complicated than I'd like due to cross-platform differences.
