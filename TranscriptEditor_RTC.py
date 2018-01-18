@@ -221,12 +221,8 @@ class TranscriptEditor(RichTextEditCtrl):
             # Because of the new text import model I've implemented, dataType should be "xml"
             # except in the case of legacy data that was imported but never opened.
 
-            # If a STRING is passed in, we probably have a file name, not a Transcript Object.
-##            if isinstance(transcript, types.StringTypes):
-##                dataType = 'filename'
-##            el
             # If we are creating a Transcript-less Clip ...
-            if (transcript.text == u'') or ((len(transcript.text) > 24) and (transcript.text[0:24] == u'<(transcript-less clip)>')):
+            if (transcript.text == u'') or ((len(transcript.text) >= 24) and (transcript.text[0:24] == u'<(transcript-less clip)>')):
                 dataType = 'transcript-less clip'
             # If we have a transcript in XML format ...
             elif transcript.text[:5] == '<?xml':
@@ -237,9 +233,6 @@ class TranscriptEditor(RichTextEditCtrl):
             # If we have a transcript in Rich Text Format ...
             elif transcript.text[2:5] == u'rtf':
                 dataType = 'rtf'
-##            # Otherwise, we probably have a Styled Text Ctrl object that's been pickled (Transana 2.42 and earlier)
-##            else:
-##                dataType = 'pickle'
         except:
 
             print sys.exc_info()[0]
