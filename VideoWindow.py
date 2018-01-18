@@ -93,25 +93,27 @@ class VideoWindow(wx.Dialog):  # (wx.MDIChildFrame)
     def InitializeSize(self):
         """ Set the initial size of the media window based on its components.  We want to set the initial
             size of the Media Window to just show the Control Bar """
-        # Determine the size of the Media Window, including frame, BEFORE the window is resized.
-        # (Width is correct, but will change.)
-        (width, height) = self.GetSize()
-        # Resize the window so that the Button bar will be the correct size.  (Needed to compensate for different-sized
-        # header bars.)
-        self.Fit()
-        # Determine the size of the Media Window, including frame
-        winSize = self.GetSize()
-        # Determine the size of the Media Window, exluding frame
-        clientSize = self.GetClientSize()
-        # Determine the size of the tallest component of the Control Bar, the Play/Pause button
-        btnSize = self.btnPlayPause.GetSize()
-        # The new height should include the FRAME size (whole window - client size) plus the height of the Play button
-        newHeight = winSize[1] - clientSize[1] + btnSize[1]
-        # Set the Window's initial size
-        self.SetSize((width, newHeight))
+        # If Auto-Arrange is enabled ...
+        if TransanaGlobal.configData.autoArrange:
+            # Determine the size of the Media Window, including frame, BEFORE the window is resized.
+            # (Width is correct, but will change.)
+            (width, height) = self.GetSize()
+            # Resize the window so that the Button bar will be the correct size.  (Needed to compensate for different-sized
+            # header bars.)
+            self.Fit()
+            # Determine the size of the Media Window, including frame
+            winSize = self.GetSize()
+            # Determine the size of the Media Window, exluding frame
+            clientSize = self.GetClientSize()
+            # Determine the size of the tallest component of the Control Bar, the Play/Pause button
+            btnSize = self.btnPlayPause.GetSize()
+            # The new height should include the FRAME size (whole window - client size) plus the height of the Play button
+            newHeight = winSize[1] - clientSize[1] + btnSize[1]
+            # Set the Window's initial size
+            self.SetSize((width, newHeight))
 
-        if DEBUG:
-            print "VideoWindow.InitialSize():", winSize, clientSize, btnSize, newHeight, TransanaGlobal.menuHeight, TransanaGlobal.menuHeight + btnSize[1]
+            if DEBUG:
+                print "VideoWindow.InitialSize():", winSize, clientSize, btnSize, newHeight, TransanaGlobal.menuHeight, TransanaGlobal.menuHeight + btnSize[1]
 
     def Register(self, ControlObject=None):
         """ Register a ControlObject """
